@@ -1,5 +1,5 @@
 {
-  "name": "node-starter",
+  "name": "resecof",
   "version": "0.0.0",
   "dependencies": {
     "@babel/cli": "^7.21.0",
