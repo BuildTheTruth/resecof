@@ -6,20 +6,23 @@
 
 **목표**
 
-- 서버: `renderToPipeableStream`으로 Flight 스트림 생성
-- 클라이언트: `createFromFetch` + `use()`로 점진 복원
-- 최소 라우팅: `/react?location=...` (메모리 라우터)
+- 서버: `renderToRSCStream`으로 Flight 스트림 생성 (renderToPipeableStream 모방 구현)
+- 클라이언트: `fetchRSC` + `useState`로 점진 복원 (createFromFetch 모방 구현)
+- 직접 라우팅: `/`, `/about`, `/home` (Accept 헤더로 HTML/RSC 구분)
 
 **할 일**
 
-- `server/entry.ts`(Express/Fastify) + `shared/App.server.tsx` + `client/main.tsx`
-- `"use client"` 컴포넌트 1개 연결(상태 변화 확인용)
+- `server/entry.ts`(Express) + `server/rsc-renderer.ts` + `shared/App.server.tsx` + `client/main.tsx` + `client/rsc-client.ts`
+- `"use client"` 컴포넌트 1개 연결(상태 변화 확인용 Counter)
 - 에러/콘텐트 타입(`text/x-component`) 세팅
+- Accept 헤더 기반 HTML/RSC 요청 구분
 
 **완료 기준**
 
 - `Home/About` 버튼 전환 시 RSC 페이로드가 스트리밍으로 화면에 그려짐
 - SSR 없이도(순수 RSC 복원) 첫 렌더 성공
+- 브라우저 주소창에 직접 경로 입력 시 정상 동작 (`/`, `/about`, `/home`)
+- 클라이언트 컴포넌트(Counter)의 상태 변화 확인 가능
 
 ---
 
@@ -92,10 +95,38 @@
 
 ---
 
-## 제안하는 폴더 구조
+## 1주차 실제 구현 구조
 
 ```
-rsc-mini/
+resecof/
+  server/
+    entry.ts              # Express 서버 + 라우팅 + HTML/RSC 구분
+    rsc-renderer.ts       # RSC 렌더러 (Flight 프로토콜 구현)
+  shared/
+    App.server.tsx        # 서버 컴포넌트 (Home/About 페이지)
+    Counter.client.tsx    # 클라이언트 컴포넌트 (상태 관리 예제)
+  client/
+    main.tsx              # 클라이언트 엔트리 (라우팅 + 렌더링)
+    rsc-client.ts         # RSC 클라이언트 (스트림 파싱 + 복원)
+  scripts/
+    build.mjs             # 빌드 스크립트 (esbuild)
+  dist/                   # 빌드된 서버 코드
+    server/
+      entry.js
+      rsc-renderer.js
+    shared/
+      App.server.js
+      Counter.client.js
+  public/                 # 빌드된 클라이언트 코드
+    client.js
+  tsconfig.json
+  package.json
+```
+
+## 제안하는 폴더 구조 (2주차 이후)
+
+```
+resecof/
   app/
     home/page.server.tsx
     about/page.server.tsx
@@ -117,7 +148,23 @@ rsc-mini/
 
 ```
 
-## 스크립트 예시 (esbuild 기준)
+## 1주차 스크립트 (실제 구현)
+
+```json
+{
+  "scripts": {
+    "dev": "npm run build && node dist/server/entry.js",
+    "build": "node scripts/build.mjs"
+  }
+}
+```
+
+빌드 스크립트(`scripts/build.mjs`)에서:
+
+- 클라이언트 번들: `client/main.tsx` → `public/client.js` (ESM, 모든 의존성 포함)
+- 서버 트랜스파일: `server/`, `shared/` → `dist/` (ESM, packages external)
+
+## 스크립트 예시 (2주차 이후 목표)
 
 ```json
 {
@@ -135,7 +182,33 @@ rsc-mini/
 }
 ```
 
-## 버전/주의사항(요약)
+## 1주차 구현 세부사항
+
+### 구현 방식
+
+- **직접 구현**: `react-server-dom-webpack` 대신 Flight 프로토콜을 직접 구현
+- **renderToRSCStream**: `renderToPipeableStream`을 모방하여 구현한 RSC 렌더러 (`server/rsc-renderer.ts`)
+- **fetchRSC**: `createFromFetch`를 모방하여 구현한 RSC 클라이언트 (`client/rsc-client.ts`)
+- **라우팅**: Accept 헤더로 HTML 요청과 RSC 요청을 구분
+
+### 주요 특징
+
+- **Accept 헤더 기반 요청 구분**
+
+  - 브라우저 직접 접속: `Accept: text/html` → HTML 페이지 반환
+  - JavaScript fetch: `Accept: text/x-component` → RSC 스트림 반환
+
+- **직접 라우팅**
+
+  - `/`, `/about`, `/home` 라우트 정의
+  - 브라우저 주소창에 직접 입력 가능
+  - 뒤로가기/앞으로가기 지원 (`popstate` 이벤트)
+
+- **클라이언트 컴포넌트 레지스트리**
+  - 전역 객체(`window.__CLIENT_COMPONENTS__`)에 컴포넌트 등록
+  - 서버에서 `$ClientComponent`로 마킹된 컴포넌트를 클라이언트에서 로드
+
+## 버전/주의사항 (2주차 이후)
 
 - `react`, `react-dom`, `react-server-dom-webpack`는 **서로 호환되는 버전**으로 핀 고정(예: 동일 canary 라인).
 - 서버에서 `renderToPipeableStream(..., clientManifest)`에 **클라 매니페스트** 정확히 주입.

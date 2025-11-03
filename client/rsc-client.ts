@@ -18,7 +18,6 @@ interface RSCPayload {
  * createFromFetch를 모방
  */
 export async function fetchRSC(location: string): Promise<any> {
-  // location을 그대로 경로로 사용 (/react 제거)
   // location이 "/"인 경우도 그대로 사용
   const path =
     location === "/"
