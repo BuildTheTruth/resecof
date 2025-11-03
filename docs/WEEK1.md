@@ -1,38 +1,6 @@
-# 1주차 발표: React Server Components 미니 프레임워크
+# 1주차: 최소 RSC 파이프라인(E2E)
 
-## 📋 목차
-
-1. 프로젝트 소개
-2. 1주차 목표
-3. 구현 아키텍처
-4. 핵심 구현 내용
-5. 데모 및 결과
-6. 학습 내용 및 다음 단계
-
----
-
-## 1. 프로젝트 소개
-
-### React Server Components란?
-
-React Server Components(RSC)는 서버에서 실행되는 React 컴포넌트로, 다음과 같은 특징이 있습니다:
-
-- ✅ 서버에서만 실행 → 클라이언트 번들 크기 감소
-- ✅ 데이터베이스/파일 시스템 직접 접근 가능
-- ✅ 민감한 정보를 안전하게 처리
-- ✅ 클라이언트 JavaScript 없이도 동작 가능
-
-### 프로젝트 목표
-
-React Server Components의 동작 원리를 이해하기 위해 **최소한의 RSC 프레임워크를 직접 구현**합니다.
-
----
-
-## 2. 1주차 목표
-
-### 🎯 목표
-
-**최소 RSC 파이프라인(E2E) 구축**
+## 1. 목표
 
 - 서버: `renderToRSCStream`으로 Flight 스트림 생성
 - 클라이언트: `fetchRSC` + `useState`로 점진 복원
@@ -50,7 +18,7 @@ React Server Components의 동작 원리를 이해하기 위해 **최소한의 R
 
 ---
 
-## 3. 구현 아키텍처
+## 2. 구현 아키텍처
 
 ### 전체 구조
 
@@ -100,9 +68,9 @@ resecof/
 
 ---
 
-## 4. 핵심 구현 내용
+## 3. 핵심 구현 내용
 
-### 4.1 서버 사이드: Flight 스트림 생성
+### 3.1 서버 사이드: Flight 스트림 생성
 
 #### `server/rsc-renderer.ts`
 
@@ -132,7 +100,7 @@ export function renderToRSCStream(element: any, res: Response) {
 }
 ```
 
-### 4.2 클라이언트 사이드: RSC 페이로드 복원
+### 3.2 클라이언트 사이드: RSC 페이로드 복원
 
 #### `client/rsc-client.ts`
 
@@ -160,7 +128,7 @@ export async function fetchRSC(location: string): Promise<any> {
 }
 ```
 
-### 4.3 라우팅: Accept 헤더 기반 구분
+### 3.3 라우팅: Accept 헤더 기반 구분
 
 #### `server/entry.ts`
 
@@ -184,7 +152,7 @@ function handleRoute(req: express.Request, res: express.Response) {
 - 브라우저 직접 접속: `Accept: text/html` → HTML 페이지
 - JavaScript fetch: `Accept: text/x-component` → RSC 스트림
 
-### 4.4 클라이언트 컴포넌트 레지스트리
+### 3.4 클라이언트 컴포넌트 레지스트리
 
 서버에서 `$ClientComponent`로 마킹된 컴포넌트를 클라이언트에서 동적으로 로드합니다.
 
@@ -206,9 +174,9 @@ element.type = component;
 
 ---
 
-## 5. 데모 및 결과
+## 4. 데모 및 결과
 
-### 5.1 실행 방법
+### 4.1 실행 방법
 
 ```bash
 # 1. 의존성 설치
@@ -221,7 +189,7 @@ npm run build
 npm run dev
 ```
 
-### 5.2 데모 시나리오
+### 4.2 데모 시나리오
 
 1. **브라우저 접속**
 
@@ -240,7 +208,7 @@ npm run dev
    - Counter 컴포넌트의 상태 변화 확인
    - 서버 컴포넌트와 클라이언트 컴포넌트의 역할 분리 확인
 
-### 5.3 네트워크 확인
+### 4.3 네트워크 확인
 
 **Chrome DevTools Network 탭:**
 
@@ -268,7 +236,7 @@ Accept: text/x-component
 }
 ```
 
-### 5.4 완료 기준 달성
+### 4.4 완료 기준 달성
 
 - ✅ `Home/About` 버튼 전환 시 RSC 페이로드가 스트리밍으로 화면에 그려짐
 - ✅ SSR 없이도(순수 RSC 복원) 첫 렌더 성공
@@ -277,9 +245,9 @@ Accept: text/x-component
 
 ---
 
-## 6. 학습 내용 및 다음 단계
+## 5. 학습 내용 및 다음 단계
 
-### 6.1 주요 학습 내용
+### 5.1 주요 학습 내용
 
 #### Flight 프로토콜
 
@@ -301,7 +269,7 @@ Accept: text/x-component
 - URL 기반 네비게이션과 RSC 요청의 관계
 - Accept 헤더를 활용한 요청 타입 구분
 
-### 6.2 구현의 한계 (1주차)
+### 5.2 구현의 한계 (1주차)
 
 - ❌ SSR 없음 (순수 RSC 복원만)
 - ❌ 실제 번들러 통합 없음 (간단한 esbuild 빌드만)
@@ -309,7 +277,7 @@ Accept: text/x-component
 - ❌ 에러 바운더리 미구현
 - ❌ 서버 액션 미구현
 
-### 6.3 다음 단계 (2주차)
+### 5.3 다음 단계 (2주차)
 
 1. **번들링 & 경계**
 
@@ -330,39 +298,9 @@ Accept: text/x-component
 
 ---
 
-## 📊 성과 및 인사이트
-
-### 성과
-
-- ✅ React Server Components의 핵심 원리 이해
-- ✅ Flight 프로토콜 직접 구현을 통한 깊은 이해
-- ✅ 최소한의 RSC 파이프라인 구축 완료
-
-### 인사이트
-
-1. **서버 컴포넌트의 장점**
-
-   - 클라이언트 번들 크기 감소
-   - 서버 리소스 직접 활용
-   - 보안 향상
-
-2. **구현의 복잡성**
-
-   - Flight 프로토콜 직렬화/역직렬화
-   - 서버/클라이언트 컴포넌트 경계 관리
-   - 스트리밍 처리
-
-3. **실제 프레임워크의 필요성**
-   - Next.js 같은 프레임워크가 제공하는 도구들의 가치
-   - 번들링, 라우팅, 최적화 등의 복잡성
-
----
-
 ## 🔗 참고 자료
 
 - [React Server Components RFC](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md)
 - [React 18 Docs](https://react.dev/)
 - [Next.js App Router](https://nextjs.org/docs/app)
 - [Flight 프로토콜](https://github.com/facebook/react/blob/main/packages/react-server/src/ReactFlightServer.js)
-
----
