@@ -1,13 +1,14 @@
 import * as esbuild from "esbuild";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
-import { fileURLToPath } from "url";
+import { existsSync, mkdirSync } from "fs";
 import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const rootDir = join(__dirname, "..");
 
 // public 디렉토리 생성
-const publicDir = join(__dirname, "public");
+const publicDir = join(rootDir, "public");
 if (!existsSync(publicDir)) {
   mkdirSync(publicDir, { recursive: true });
 }
@@ -17,9 +18,9 @@ console.log("🔨 빌드 시작...");
 // 1. 클라이언트 번들 생성
 console.log("📦 클라이언트 번들 생성 중...");
 await esbuild.build({
-  entryPoints: ["client/main.tsx"],
+  entryPoints: [join(rootDir, "client/main.tsx")],
   bundle: true,
-  outfile: "public/client.js",
+  outfile: join(publicDir, "client.js"),
   format: "esm",
   platform: "browser",
   target: "es2020",
@@ -37,12 +38,12 @@ console.log("✅ 클라이언트 번들 생성 완료: public/client.js");
 console.log("🔧 서버 파일 트랜스파일 중...");
 await esbuild.build({
   entryPoints: [
-    "server/entry.ts",
-    "server/rsc-renderer.ts",
-    "shared/App.server.tsx",
-    "shared/Counter.client.tsx",
+    join(rootDir, "server/entry.ts"),
+    join(rootDir, "server/rsc-renderer.ts"),
+    join(rootDir, "shared/App.server.tsx"),
+    join(rootDir, "shared/Counter.client.tsx"),
   ],
-  outdir: "dist",
+  outdir: join(rootDir, "dist"),
   format: "esm",
   platform: "node",
   target: "node18",

@@ -3,6 +3,8 @@
  * 실제 React Server Components는 더 복잡하지만, 1주차 목표를 위한 최소 구현
  */
 
+import { createElement } from "react";
+
 interface RSCPayload {
   type: string;
   data?: any;
@@ -16,9 +18,21 @@ interface RSCPayload {
  * createFromFetch를 모방
  */
 export async function fetchRSC(location: string): Promise<any> {
-  const response = await fetch(
-    `/react?location=${encodeURIComponent(location)}`
-  );
+  // location을 그대로 경로로 사용 (/react 제거)
+  // location이 "/"인 경우도 그대로 사용
+  const path =
+    location === "/"
+      ? "/"
+      : location.startsWith("/")
+      ? location
+      : `/${location}`;
+
+  // RSC 요청임을 명시 (서버에서 HTML과 구분하기 위해)
+  const response = await fetch(path, {
+    headers: {
+      Accept: "text/x-component",
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`RSC fetch failed: ${response.statusText}`);
@@ -53,10 +67,12 @@ export async function fetchRSC(location: string): Promise<any> {
         const payload: RSCPayload = JSON.parse(line);
 
         if (payload.type === "root") {
+          console.log("📦 RSC root payload received");
           rootData = reviveRSCData(
             payload.data,
             payload.clientComponents || []
           );
+          console.log("✅ RSC data revived:", rootData);
         } else if (payload.type === "chunk" && payload.id) {
           // 비동기 청크 처리
           const revived = reviveRSCData(payload.data, []);
@@ -100,38 +116,48 @@ function reviveRSCData(data: any, clientComponents: string[]): any {
       data.$$typeof === "Symbol(react.element)" ||
       data.$$typeof?.includes?.("react.element")
     ) {
-      const element: any = {
-        $$typeof: Symbol.for("react.element"),
-        type: data.type,
-        key: data.key,
-        ref: null,
-        props: {},
-      };
+      let type = data.type;
+      let props: any = {};
 
       // 클라이언트 컴포넌트 처리
       if (data.type === "$ClientComponent") {
         const componentName = data.props?.$componentName;
         if (componentName) {
           // 동적으로 클라이언트 컴포넌트 로드
-          element.type = loadClientComponent(componentName);
-          element.props = reviveRSCData(
-            Object.keys(data.props || {})
-              .filter((k) => k !== "$componentName")
-              .reduce((acc, k) => ({ ...acc, [k]: data.props[k] }), {}),
-            clientComponents
-          );
+          type = loadClientComponent(componentName);
+          // $componentName을 제외한 나머지 props 복원
+          const otherProps = Object.keys(data.props || {})
+            .filter((k) => k !== "$componentName")
+            .reduce((acc, k) => ({ ...acc, [k]: data.props[k] }), {});
+          props = reviveRSCData(otherProps, clientComponents);
         }
       } else if (data.type === "$Suspense") {
-        // Suspense placeholder
-        element.props = { fallback: "Loading..." };
+        // Suspense placeholder - React.Suspense로 변환
+        type = "div"; // 임시로 div로 렌더링
+        props = { children: "Loading..." };
       } else {
-        element.props = reviveRSCData(data.props, clientComponents);
+        // props 복원 (children 포함)
+        const restoredProps = reviveRSCData(data.props, clientComponents);
+        props = restoredProps || {};
       }
 
-      return element;
+      // React.createElement를 사용하여 실제 React 요소 생성
+      const children = props.children;
+      delete props.children;
+
+      // children이 있으면 createElement에 전달, 없으면 props만
+      if (children !== undefined) {
+        if (Array.isArray(children)) {
+          return createElement(type, props, ...children);
+        } else {
+          return createElement(type, props, children);
+        }
+      } else {
+        return createElement(type, props);
+      }
     }
 
-    // 일반 객체
+    // 일반 객체 (style 등)
     const result: any = {};
     for (const key in data) {
       result[key] = reviveRSCData(data[key], clientComponents);

@@ -11,13 +11,16 @@ const app = express();
 const PORT = 3000;
 
 // 정적 파일 서빙
-app.use(express.static(join(__dirname, "..", "public")));
+// 서버가 dist/server/에서 실행되므로, 프로젝트 루트의 public 디렉토리를 찾기 위해 두 단계 위로 이동
+const publicDir = join(__dirname, "..", "..", "public");
+app.use(express.static(publicDir));
+console.log(`📁 정적 파일 디렉토리: ${publicDir}`);
 
-// RSC 엔드포인트: /react?location=...
-app.get("/react", async (req, res) => {
-  const location = (req.query.location as string) || "/";
+// RSC 엔드포인트: 각 라우트에서 RSC 스트림 반환
+async function handleRSCRequest(req: express.Request, res: express.Response) {
+  const location = req.path; // /, /about, /home 등
 
-  console.log(`📡 RSC 요청: location=${location}`);
+  console.log(`📡 RSC 요청: path=${location}`);
 
   try {
     // 동적으로 App 컴포넌트 import
@@ -35,10 +38,10 @@ app.get("/react", async (req, res) => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
-});
+}
 
-// 기본 HTML 페이지
-app.get("*", (req, res) => {
+// HTML 페이지 반환
+function sendHTMLPage(req: express.Request, res: express.Response) {
   const html = `
 <!DOCTYPE html>
 <html>
@@ -84,9 +87,32 @@ app.get("*", (req, res) => {
 </html>
   `;
   res.send(html);
+}
+
+// 라우트 핸들러: Accept 헤더로 HTML과 RSC 구분
+function handleRoute(req: express.Request, res: express.Response) {
+  const accept = req.headers.accept || "";
+
+  // RSC 요청 (text/x-component를 명시적으로 요청)
+  if (accept.includes("text/x-component")) {
+    handleRSCRequest(req, res);
+  } else {
+    // 브라우저가 직접 접속 (text/html을 요청하거나 Accept 헤더 없음)
+    sendHTMLPage(req, res);
+  }
+}
+
+// RSC 라우트 정의 (HTML 서빙 전에 위치)
+app.get("/", handleRoute);
+app.get("/about", handleRoute);
+app.get("/home", handleRoute);
+
+// 나머지 모든 라우트는 404
+app.get("*", (req, res) => {
+  res.status(404).send("404 Not Found");
 });
 
 app.listen(PORT, () => {
   console.log(`✨ 서버가 http://localhost:${PORT} 에서 실행 중입니다`);
-  console.log(`📡 RSC 엔드포인트: http://localhost:${PORT}/react`);
+  console.log(`📡 RSC 라우트: /, /about, /home`);
 });

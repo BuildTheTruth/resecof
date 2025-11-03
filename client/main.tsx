@@ -1,12 +1,7 @@
-import React, {
-  useState,
-  useTransition,
-  startTransition,
-  Suspense,
-} from "react";
+import React, { Suspense, useState, useTransition } from "react";
 import { createRoot } from "react-dom/client";
-import { fetchRSC, registerClientComponent } from "./rsc-client.js";
 import Counter from "../shared/Counter.client.js";
+import { fetchRSC, registerClientComponent } from "./rsc-client.js";
 
 // 클라이언트 컴포넌트 등록
 registerClientComponent("Counter", Counter);
@@ -39,11 +34,13 @@ function Content({ data }: { data: Promise<any> }) {
     data
       .then((result) => {
         if (!cancelled) {
+          console.log("📦 Content received:", result);
           setContent(result);
         }
       })
       .catch((err) => {
         if (!cancelled) {
+          console.error("❌ Content error:", err);
           setError(err);
         }
       });
@@ -61,6 +58,7 @@ function Content({ data }: { data: Promise<any> }) {
     return <div>로딩 중...</div>;
   }
 
+  console.log("🎨 Rendering content:", content);
   return content;
 }
 

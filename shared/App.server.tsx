@@ -1,4 +1,3 @@
-import React from "react";
 import Counter from "./Counter.client.js";
 
 interface AppProps {
@@ -98,6 +97,7 @@ export default function App({ location }: AppProps) {
     switch (location) {
       case "/about":
         return <About />;
+      case "/home":
       case "/":
       default:
         return <Home />;
@@ -118,11 +118,15 @@ export default function App({ location }: AppProps) {
         }}
       >
         <button
-          data-navigate="/"
+          data-navigate="/home"
           style={{
             padding: "10px 20px",
-            background: location === "/" ? "#fff" : "rgba(255,255,255,0.2)",
-            color: location === "/" ? "#6200ea" : "#fff",
+            background:
+              location === "/" || location === "/home"
+                ? "#fff"
+                : "rgba(255,255,255,0.2)",
+            color:
+              location === "/" || location === "/home" ? "#6200ea" : "#fff",
             border: "none",
             borderRadius: "4px",
             cursor: "pointer",
