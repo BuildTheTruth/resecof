@@ -49,6 +49,36 @@ function renderElement(element: any, context: RenderContext): any {
     if (typeof type === "function") {
       const componentName = type.name || "Anonymous";
 
+      // ClientComponent 래퍼 감지 (서버에서 클라이언트 컴포넌트를 래핑한 경우)
+      if (componentName === "ClientComponent" && props?.componentName) {
+        const wrappedComponentName = props.componentName;
+        context.clientComponents.add(wrappedComponentName);
+
+        // 매니페스트에서 클라이언트 컴포넌트 URL 찾기
+        let componentUrl: string | undefined;
+        if (context.clientManifest) {
+          componentUrl = context.clientManifest[wrappedComponentName];
+          if (!componentUrl) {
+            const modulePath = `shared/${wrappedComponentName}.client.tsx`;
+            componentUrl = context.clientManifest[modulePath] || context.clientManifest[`shared/${wrappedComponentName}.client`];
+          }
+        }
+
+        // componentName prop을 제외한 나머지 props 전달
+        const { componentName: _, ...restProps } = props;
+
+        return {
+          $$typeof: Symbol.for("react.element"),
+          type: "$ClientComponent",
+          key,
+          props: {
+            ...renderProps(restProps, context),
+            $componentName: wrappedComponentName,
+            $componentUrl: componentUrl,
+          },
+        };
+      }
+
       // 클라이언트 컴포넌트 감지 (파일명에 .client가 있거나, 함수에 마킹된 경우)
       if (isClientComponent(type)) {
         context.clientComponents.add(componentName);

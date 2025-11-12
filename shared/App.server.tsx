@@ -1,5 +1,29 @@
 import React from "react";
-import Counter from "./Counter.client.js";
+
+// 클라이언트 컴포넌트 래퍼: 서버에서는 컴포넌트 이름만 전달
+// 실제 컴포넌트는 클라이언트에서 로드됨
+function ClientComponent({
+  componentName,
+  ...props
+}: {
+  componentName: string;
+  [key: string]: any;
+}) {
+  // 서버에서는 클라이언트 컴포넌트를 실행하지 않고 마킹만 함
+  // rsc-renderer에서 이 컴포넌트를 감지하여 클라이언트 컴포넌트로 변환
+  return React.createElement("div", {
+    "data-client-component": componentName,
+    ...props,
+  } as any);
+}
+
+// Counter 컴포넌트 래퍼
+function Counter(props: any) {
+  return React.createElement(ClientComponent, {
+    componentName: "Counter",
+    ...props,
+  });
+}
 
 interface AppProps {
   location: string;
