@@ -10,6 +10,7 @@ interface RenderContext {
   tasks: Set<Promise<any>>;
   clientComponents: Set<string>;
   pipe: (data: any) => void;
+  clientManifest?: Record<string, string>;
 }
 
 /**
@@ -52,6 +53,19 @@ function renderElement(element: any, context: RenderContext): any {
       if (isClientComponent(type)) {
         context.clientComponents.add(componentName);
 
+        // 매니페스트에서 클라이언트 컴포넌트 URL 찾기
+        let componentUrl: string | undefined;
+        if (context.clientManifest) {
+          // 컴포넌트 이름으로 먼저 찾기
+          componentUrl = context.clientManifest[componentName];
+          // 없으면 모듈 경로로 찾기 (type이 함수인 경우 파일 경로 정보가 없을 수 있음)
+          if (!componentUrl) {
+            // Counter 같은 경우 직접 매핑 시도
+            const modulePath = `shared/${componentName}.client.tsx`;
+            componentUrl = context.clientManifest[modulePath] || context.clientManifest[`shared/${componentName}.client`];
+          }
+        }
+
         return {
           $$typeof: Symbol.for("react.element"),
           type: "$ClientComponent",
@@ -59,6 +73,7 @@ function renderElement(element: any, context: RenderContext): any {
           props: {
             ...renderProps(props, context),
             $componentName: componentName,
+            $componentUrl: componentUrl, // 매니페스트에서 찾은 URL 전달
           },
         };
       }
@@ -170,11 +185,16 @@ function serialize(data: any): string {
 /**
  * RSC 스트림 렌더링 (renderToPipeableStream 모방)
  */
-export function renderToRSCStream(element: any, res: Response) {
+export function renderToRSCStream(
+  element: any,
+  res: Response,
+  clientManifest?: Record<string, string>
+) {
   const context: RenderContext = {
     id: 0,
     tasks: new Set(),
     clientComponents: new Set(),
+    clientManifest,
     pipe: (data: any) => {
       res.write(serialize(data) + "\n");
 
@@ -193,10 +213,25 @@ export function renderToRSCStream(element: any, res: Response) {
     // 초기 렌더링
     const rendered = renderElement(element, context);
 
+    // 클라이언트 컴포넌트 정보와 매니페스트 URL 매핑 로깅
+    const clientComponentInfo: Record<string, string> = {};
+    if (context.clientManifest) {
+      for (const componentName of context.clientComponents) {
+        const url = context.clientManifest[componentName] || 
+                   context.clientManifest[`shared/${componentName}.client.tsx`] ||
+                   context.clientManifest[`shared/${componentName}.client`];
+        if (url) {
+          clientComponentInfo[componentName] = url;
+          console.log(`  📦 클라이언트 컴포넌트 매핑: ${componentName} → ${url}`);
+        }
+      }
+    }
+
     context.pipe({
       type: "root",
       data: rendered,
       clientComponents: Array.from(context.clientComponents),
+      clientManifest: clientComponentInfo, // 매니페스트 정보도 함께 전달
     });
   } catch (error) {
     console.error("RSC Render Error:", error);

@@ -2,35 +2,49 @@ import express from "express";
 import { createElement } from "react";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { readFileSync } from "fs";
 import { renderToRSCStream } from "./rsc-renderer.js";
+import App from "../shared/App.server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// 클라이언트 매니페스트 로드
+let clientManifest: Record<string, string> = {};
+try {
+  const manifestPath = join(__dirname, "..", "react-client-manifest.json");
+  const manifestContent = readFileSync(manifestPath, "utf-8");
+  clientManifest = JSON.parse(manifestContent);
+  console.log(
+    "📋 클라이언트 매니페스트 로드 완료:",
+    Object.keys(clientManifest).length,
+    "개 모듈"
+  );
+} catch (error) {
+  console.warn("⚠️ 클라이언트 매니페스트를 로드할 수 없습니다:", error);
+}
 
 const app = express();
 const PORT = 3000;
 
 // 정적 파일 서빙
-// 서버가 dist/server/에서 실행되므로, 프로젝트 루트의 public 디렉토리를 찾기 위해 두 단계 위로 이동
-const publicDir = join(__dirname, "..", "..", "public");
-app.use(express.static(publicDir));
+// 서버가 dist/server/에서 실행되므로, dist/public 디렉토리를 찾기 위해 한 단계 위로 이동
+const publicDir = join(__dirname, "..", "public");
+app.use("/dist/public", express.static(publicDir));
 console.log(`📁 정적 파일 디렉토리: ${publicDir}`);
 
 // RSC 엔드포인트: 각 라우트에서 RSC 스트림 반환
-async function handleRSCRequest(req: express.Request, res: express.Response) {
+function handleRSCRequest(req: express.Request, res: express.Response) {
   const location = req.path; // /, /about, /home 등
 
   console.log(`📡 RSC 요청: path=${location}`);
 
   try {
-    // 동적으로 App 컴포넌트 import
-    const { default: App } = await import("../shared/App.server.js");
-
     // App 컴포넌트를 location prop과 함께 렌더링
     const root = createElement(App, { location });
 
     // RSC 스트림으로 렌더링 (renderToPipeableStream 모방)
-    renderToRSCStream(root, res);
+    renderToRSCStream(root, res, clientManifest);
   } catch (error) {
     console.error("❌ 서버 에러:", error);
     res.status(500).json({
@@ -82,7 +96,7 @@ function sendHTMLPage(req: express.Request, res: express.Response) {
     <div id="root">
       <div class="loading">로딩 중...</div>
     </div>
-    <script type="module" src="/client.js"></script>
+    <script type="module" src="/dist/public/main.js"></script>
   </body>
 </html>
   `;
