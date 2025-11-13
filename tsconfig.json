@@ -13,7 +13,14 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
-  "include": ["server/**/*", "shared/**/*", "client/**/*"],
+  "include": [
+    "src/server/**/*",
+    "shared/**/*",
+    "src/components",
+    "src/pages",
+    "src/utils",
+    "src/App.tsx",
+    "src/main.tsx"
+  ],
   "exclude": ["node_modules"]
 }
-

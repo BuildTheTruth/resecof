@@ -59,15 +59,20 @@ function renderElement(element: any, context: RenderContext): any {
         if (context.clientManifest) {
           componentUrl = context.clientManifest[wrappedComponentName];
           if (!componentUrl) {
-            const modulePath = `client/components/${wrappedComponentName}.tsx`;
+            const modulePath = `src/components/${wrappedComponentName}.tsx`;
             componentUrl =
               context.clientManifest[modulePath] ||
               context.clientManifest[
-                `client/components/${wrappedComponentName}.ts`
+                `src/components/${wrappedComponentName}.ts`
               ] ||
               context.clientManifest[
-                `client/components/${wrappedComponentName}`
-              ];
+                `src/components/${wrappedComponentName}`
+              ] ||
+              context.clientManifest[
+                `components/${wrappedComponentName}.tsx`
+              ] ||
+              context.clientManifest[`components/${wrappedComponentName}.ts`] ||
+              context.clientManifest[`components/${wrappedComponentName}`];
           }
         }
 
@@ -98,12 +103,15 @@ function renderElement(element: any, context: RenderContext): any {
           // 없으면 모듈 경로로 찾기 (type이 함수인 경우 파일 경로 정보가 없을 수 있음)
           if (!componentUrl) {
             // Counter 같은 경우 직접 매핑 시도
-            // client/components/ 경로 우선 시도
-            const clientPath = `client/components/${componentName}.tsx`;
+            // src/components/ 경로 우선 시도
+            const clientPath = `src/components/${componentName}.tsx`;
             componentUrl =
               context.clientManifest[clientPath] ||
-              context.clientManifest[`client/components/${componentName}.ts`] ||
-              context.clientManifest[`client/components/${componentName}`];
+              context.clientManifest[`src/components/${componentName}.ts`] ||
+              context.clientManifest[`src/components/${componentName}`] ||
+              context.clientManifest[`components/${componentName}.tsx`] ||
+              context.clientManifest[`components/${componentName}.ts`] ||
+              context.clientManifest[`components/${componentName}`];
           }
         }
 

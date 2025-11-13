@@ -3,17 +3,18 @@ import { createElement } from "react";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { readFileSync, readdirSync, statSync, existsSync } from "fs";
-import { renderToRSCStream } from "./rsc-renderer.js";
-import App from "./components/App.js";
+import { renderToRSCStream } from "../utils/rsc-renderer.js";
+import App from "../App.js"; // App은 서버 컴포넌트
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+// 서버는 dist/server/에서 실행되므로, 프로젝트 루트는 ../.. (dist/server -> dist -> 프로젝트 루트)
 const rootDir = join(__dirname, "..", "..");
 
 // 클라이언트 매니페스트 로드
 let clientManifest: Record<string, string> = {};
 try {
-  const manifestPath = join(__dirname, "..", "react-client-manifest.json");
+  const manifestPath = join(rootDir, "dist", "react-client-manifest.json");
   const manifestContent = readFileSync(manifestPath, "utf-8");
   clientManifest = JSON.parse(manifestContent);
   console.log(
@@ -48,17 +49,21 @@ function scanRoutes(pagesDir: string): RouteMap {
       if (entry.isDirectory()) {
         // 디렉토리인 경우 재귀적으로 스캔
         scanDirectory(fullPath, routePath);
-      } else if (entry.name === "page.tsx" || entry.name === "page.ts") {
-        // page.tsx 파일 발견
+      } else if (
+        entry.name === "page.tsx" ||
+        entry.name === "page.ts" ||
+        entry.name === "page.js"
+      ) {
+        // page.tsx, page.ts, 또는 page.js 파일 발견
         // basePath가 /home이면 / 또는 /home으로 매핑
         const route = basePath === "/home" ? "/" : basePath;
 
-        // 동적 import를 위한 경로 생성 (dist/server/pages/ 디렉토리 기준)
-        // fullPath: /Users/.../resecof/server/pages/home/page.tsx
-        // distPath: dist/server/pages/home/page.js
+        // 동적 import를 위한 경로 생성 (dist/pages/ 디렉토리 기준)
+        // fullPath: /Users/.../resecof/dist/pages/home/page.js
+        // 서버는 dist/server/에서 실행되므로 ../pages/로 접근
         const relativePath = fullPath.replace(pagesDir + "/", "");
-        const distPath = relativePath.replace(/\.tsx?$/, ".js");
-        const importPath = `./pages/${distPath}`;
+        // 이미 .js 파일이므로 확장자 변경 불필요
+        const importPath = `../pages/${relativePath}`;
 
         const routeLoader = async () => {
           try {
@@ -89,8 +94,10 @@ function scanRoutes(pagesDir: string): RouteMap {
   return routes;
 }
 
-// 라우트 매핑 생성
-const pagesDir = join(rootDir, "server", "pages");
+// 라우트 매핑 생성 (dist/pages/ 디렉토리 스캔)
+// 서버는 dist/server/에서 실행되므로 dist/pages/를 스캔
+// rootDir은 프로젝트 루트이므로 dist/pages/ 경로 사용
+const pagesDir = join(rootDir, "dist", "pages");
 const routes = scanRoutes(pagesDir);
 console.log(`📁 파일 기반 라우터: ${routes.size}개 라우트 발견`);
 
@@ -140,50 +147,7 @@ async function handleRSCRequest(req: express.Request, res: express.Response) {
 
 // HTML 페이지 반환
 function sendHTMLPage(req: express.Request, res: express.Response) {
-  const html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>React Server Components - Week 1</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        background: #f5f5f5;
-        padding: 20px;
-      }
-      #root {
-        max-width: 800px;
-        margin: 0 auto;
-        background: white;
-        padding: 40px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      }
-      h1 {
-        margin-bottom: 20px;
-        color: #333;
-      }
-      .loading {
-        color: #666;
-        font-style: italic;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="root">
-      <div class="loading">로딩 중...</div>
-    </div>
-    <script type="module" src="/dist/public/main.js"></script>
-  </body>
-</html>
-  `;
+  const html = readFileSync(join(publicDir, "index.html"), "utf-8");
   res.send(html);
 }
 
