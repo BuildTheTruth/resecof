@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-export default function Counter() {
+// 클라이언트 컴포넌트 마커 (서버에서 감지용)
+function Counter() {
   const [count, setCount] = useState(0);
   const [message, setMessage] = useState("");
 
@@ -115,3 +116,8 @@ export default function Counter() {
     </div>
   );
 }
+
+// 클라이언트 컴포넌트 마커 추가
+Counter.__isClientComponent = true;
+
+export default Counter;

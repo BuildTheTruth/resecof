@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { readFileSync, readdirSync, statSync, existsSync } from "fs";
 import { renderToRSCStream } from "./rsc-renderer.js";
-import App from "../shared/App.server.js";
+import App from "./components/App.server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,12 +56,12 @@ function scanRoutes(appDir: string): RouteMap {
         // basePath가 /home이면 / 또는 /home으로 매핑
         const route = basePath === "/home" ? "/" : basePath;
 
-        // 동적 import를 위한 경로 생성 (dist/app/ 디렉토리 기준)
-        // fullPath: /Users/.../resecof/app/home/page.server.tsx
-        // distPath: dist/app/home/page.server.js
+        // 동적 import를 위한 경로 생성 (dist/server/app/ 디렉토리 기준)
+        // fullPath: /Users/.../resecof/server/app/home/page.server.tsx
+        // distPath: dist/server/app/home/page.server.js
         const relativePath = fullPath.replace(appDir + "/", "");
         const distPath = relativePath.replace(/\.tsx?$/, ".js");
-        const importPath = `../app/${distPath}`;
+        const importPath = `./app/${distPath}`;
 
         const routeLoader = async () => {
           try {
@@ -93,7 +93,7 @@ function scanRoutes(appDir: string): RouteMap {
 }
 
 // 라우트 매핑 생성
-const appDir = join(rootDir, "app");
+const appDir = join(rootDir, "server", "app");
 const routes = scanRoutes(appDir);
 console.log(`📁 파일 기반 라우터: ${routes.size}개 라우트 발견`);
 

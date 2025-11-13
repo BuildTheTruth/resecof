@@ -1,6 +1,6 @@
 import React, { Suspense, useState, useTransition } from "react";
 import { createRoot } from "react-dom/client";
-import Counter from "../shared/Counter.client.js";
+import Counter from "./components/Counter.client.js";
 import { fetchRSC, registerClientComponent } from "./rsc-client.js";
 
 // 클라이언트 컴포넌트 등록

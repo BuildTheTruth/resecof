@@ -60,7 +60,9 @@ function renderElement(element: any, context: RenderContext): any {
           componentUrl = context.clientManifest[wrappedComponentName];
           if (!componentUrl) {
             const modulePath = `shared/${wrappedComponentName}.client.tsx`;
-            componentUrl = context.clientManifest[modulePath] || context.clientManifest[`shared/${wrappedComponentName}.client`];
+            componentUrl =
+              context.clientManifest[modulePath] ||
+              context.clientManifest[`shared/${wrappedComponentName}.client`];
           }
         }
 
@@ -91,8 +93,16 @@ function renderElement(element: any, context: RenderContext): any {
           // 없으면 모듈 경로로 찾기 (type이 함수인 경우 파일 경로 정보가 없을 수 있음)
           if (!componentUrl) {
             // Counter 같은 경우 직접 매핑 시도
-            const modulePath = `shared/${componentName}.client.tsx`;
-            componentUrl = context.clientManifest[modulePath] || context.clientManifest[`shared/${componentName}.client`];
+            // client/components/ 경로 우선 시도
+            const clientPath = `client/components/${componentName}.client.tsx`;
+            const sharedPath = `shared/${componentName}.client.tsx`;
+            componentUrl =
+              context.clientManifest[clientPath] ||
+              context.clientManifest[
+                `client/components/${componentName}.client`
+              ] ||
+              context.clientManifest[sharedPath] ||
+              context.clientManifest[`shared/${componentName}.client`];
           }
         }
 
@@ -247,12 +257,19 @@ export function renderToRSCStream(
     const clientComponentInfo: Record<string, string> = {};
     if (context.clientManifest) {
       for (const componentName of context.clientComponents) {
-        const url = context.clientManifest[componentName] || 
-                   context.clientManifest[`shared/${componentName}.client.tsx`] ||
-                   context.clientManifest[`shared/${componentName}.client`];
+        const url =
+          context.clientManifest[componentName] ||
+          context.clientManifest[
+            `client/components/${componentName}.client.tsx`
+          ] ||
+          context.clientManifest[`client/components/${componentName}.client`] ||
+          context.clientManifest[`shared/${componentName}.client.tsx`] ||
+          context.clientManifest[`shared/${componentName}.client`];
         if (url) {
           clientComponentInfo[componentName] = url;
-          console.log(`  📦 클라이언트 컴포넌트 매핑: ${componentName} → ${url}`);
+          console.log(
+            `  📦 클라이언트 컴포넌트 매핑: ${componentName} → ${url}`
+          );
         }
       }
     }

@@ -6,3 +6,4 @@ public/*.html
 built/
 .DS_Store
 *.log
+.cursorrules

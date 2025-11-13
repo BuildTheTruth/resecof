@@ -1,26 +1,7 @@
 import React from "react";
-
-// 클라이언트 컴포넌트 래퍼
-function ClientComponent({
-  componentName,
-  ...props
-}: {
-  componentName: string;
-  [key: string]: any;
-}) {
-  return React.createElement("div", {
-    "data-client-component": componentName,
-    ...props,
-  } as any);
-}
-
-// Counter 컴포넌트 래퍼
-function Counter(props: any) {
-  return React.createElement(ClientComponent, {
-    componentName: "Counter",
-    ...props,
-  });
-}
+// 클라이언트 컴포넌트를 직접 import
+// 서버 번들에서는 external로 처리되고, 클라이언트 번들에 포함됨
+import Counter from "../../../client/components/Counter.client.js";
 
 /**
  * 서버 컴포넌트: Home 페이지

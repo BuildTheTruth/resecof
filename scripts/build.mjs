@@ -1,5 +1,11 @@
 import * as esbuild from "esbuild";
-import { existsSync, mkdirSync, writeFileSync, readdirSync, statSync } from "fs";
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readdirSync,
+  statSync,
+} from "fs";
 import { dirname, join, relative } from "path";
 import { fileURLToPath } from "url";
 
@@ -117,12 +123,12 @@ console.log(
   "✅ 클라이언트 매니페스트 생성 완료: dist/react-client-manifest.json"
 );
 
-// 3. app/ 디렉토리 트랜스파일 (파일 기반 라우터)
-const appDir = join(rootDir, "app");
-const distAppDir = join(distDir, "app");
+// 3. server/app/ 디렉토리 트랜스파일 (파일 기반 라우터)
+const appDir = join(rootDir, "server", "app");
+const distAppDir = join(distDir, "server", "app");
 if (existsSync(appDir)) {
   console.log("📁 app/ 디렉토리 트랜스파일 중...");
-  
+
   // app/ 디렉토리에서 모든 .server.tsx 파일 찾기
   function findPageFiles(dir, fileList = []) {
     const files = readdirSync(dir);
@@ -137,9 +143,9 @@ if (existsSync(appDir)) {
     }
     return fileList;
   }
-  
+
   const pageFiles = findPageFiles(appDir);
-  
+
   if (pageFiles.length === 0) {
     console.log("⚠️ app/ 디렉토리에 page.server.tsx 파일이 없습니다.");
   } else {
@@ -164,10 +170,10 @@ if (existsSync(appDir)) {
         },
       ],
     });
-    console.log("✅ app/ 디렉토리 트랜스파일 완료: dist/app/");
+    console.log("✅ server/app/ 디렉토리 트랜스파일 완료: dist/server/app/");
   }
 } else {
-  console.log("⚠️ app/ 디렉토리가 없습니다. 건너뜁니다.");
+  console.log("⚠️ server/app/ 디렉토리가 없습니다. 건너뜁니다.");
 }
 
 // 4. 서버 번들 생성 (.server.* 파일만 포함)
