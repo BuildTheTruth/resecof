@@ -27,15 +27,14 @@ function Counter(props: any) {
 
 interface AppProps {
   location: string;
+  PageComponent?: React.ComponentType<any>;
 }
 
 /**
- * 서버 컴포넌트: Home 페이지
+ * 서버 컴포넌트: Home 페이지 (레거시 - app/home/page.server.tsx로 이동됨)
  *
- * 특징:
- * - 서버에서 실행되므로 클라이언트 번들에 포함되지 않음
- * - 서버 리소스(파일 시스템, 데이터베이스)에 접근 가능
- * - 상태(state)를 사용할 수 없음
+ * @deprecated 이 컴포넌트는 app/home/page.server.tsx로 이동되었습니다.
+ * 파일 기반 라우터를 사용하세요.
  */
 function Home() {
   return (
@@ -75,11 +74,10 @@ function Home() {
 }
 
 /**
- * 서버 컴포넌트: About 페이지
+ * 서버 컴포넌트: About 페이지 (레거시 - app/about/page.server.tsx로 이동됨)
  *
- * 서버 컴포넌트의 장점을 보여주는 예제:
- * - 서버 시간을 직접 생성 (서버 리소스 활용)
- * - 서버에서 렌더링된 콘텐츠를 클라이언트로 전송
+ * @deprecated 이 컴포넌트는 app/about/page.server.tsx로 이동되었습니다.
+ * 파일 기반 라우터를 사용하세요.
  */
 function About() {
   // 서버에서 시간을 생성 (매 요청마다 최신 시간)
@@ -150,23 +148,21 @@ function About() {
  * 역할:
  * - location prop을 받아서 적절한 페이지 컴포넌트 렌더링
  * - 네비게이션 바 제공
- * - 라우팅 로직 처리
+ * - 파일 기반 라우터에서 로드된 페이지 컴포넌트 렌더링
  *
  * @param location - 현재 경로 (/, /about, /home)
+ * @param PageComponent - 파일 기반 라우터에서 로드된 페이지 컴포넌트
  */
-export default function App({ location }: AppProps) {
+export default function App({ location, PageComponent }: AppProps) {
   /**
-   * 라우팅 로직: location에 따라 적절한 페이지 컴포넌트 반환
+   * 페이지 렌더링: 파일 기반 라우터에서 로드된 컴포넌트 사용
    */
   const renderPage = () => {
-    switch (location) {
-      case "/about":
-        return <About />;
-      case "/home":
-      case "/":
-      default:
-        return <Home />;
+    if (PageComponent) {
+      return <PageComponent />;
     }
+    // 폴백: PageComponent가 없는 경우 (하위 호환성)
+    return <div>페이지를 찾을 수 없습니다.</div>;
   };
 
   /**

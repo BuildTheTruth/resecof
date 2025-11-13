@@ -1,5 +1,5 @@
 import * as esbuild from "esbuild";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync, readdirSync, statSync } from "fs";
 import { dirname, join, relative } from "path";
 import { fileURLToPath } from "url";
 
@@ -117,7 +117,60 @@ console.log(
   "✅ 클라이언트 매니페스트 생성 완료: dist/react-client-manifest.json"
 );
 
-// 3. 서버 번들 생성 (.server.* 파일만 포함)
+// 3. app/ 디렉토리 트랜스파일 (파일 기반 라우터)
+const appDir = join(rootDir, "app");
+const distAppDir = join(distDir, "app");
+if (existsSync(appDir)) {
+  console.log("📁 app/ 디렉토리 트랜스파일 중...");
+  
+  // app/ 디렉토리에서 모든 .server.tsx 파일 찾기
+  function findPageFiles(dir, fileList = []) {
+    const files = readdirSync(dir);
+    for (const file of files) {
+      const filePath = join(dir, file);
+      const stat = statSync(filePath);
+      if (stat.isDirectory()) {
+        findPageFiles(filePath, fileList);
+      } else if (file.endsWith(".server.tsx") || file.endsWith(".server.ts")) {
+        fileList.push(filePath);
+      }
+    }
+    return fileList;
+  }
+  
+  const pageFiles = findPageFiles(appDir);
+  
+  if (pageFiles.length === 0) {
+    console.log("⚠️ app/ 디렉토리에 page.server.tsx 파일이 없습니다.");
+  } else {
+    await esbuild.build({
+      entryPoints: pageFiles,
+      outdir: distAppDir,
+      format: "esm",
+      platform: "node",
+      target: "node18",
+      jsx: "automatic",
+      sourcemap: true,
+      packages: "external", // node_modules는 번들하지 않음
+      plugins: [
+        {
+          name: "exclude-client",
+          setup(build) {
+            // .client.* 파일을 external로 처리
+            build.onResolve({ filter: /\.client\./ }, (args) => {
+              return { path: args.path, external: true };
+            });
+          },
+        },
+      ],
+    });
+    console.log("✅ app/ 디렉토리 트랜스파일 완료: dist/app/");
+  }
+} else {
+  console.log("⚠️ app/ 디렉토리가 없습니다. 건너뜁니다.");
+}
+
+// 4. 서버 번들 생성 (.server.* 파일만 포함)
 console.log("🔧 서버 번들 생성 중...");
 await esbuild.build({
   entryPoints: [join(rootDir, "server/entry.ts")],
