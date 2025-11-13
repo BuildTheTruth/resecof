@@ -1,11 +1,5 @@
 import { join } from "path";
-import {
-  readdirSync,
-  statSync,
-  existsSync,
-  mkdirSync,
-  writeFileSync,
-} from "fs";
+import { readdirSync, existsSync, mkdirSync, writeFileSync } from "fs";
 import { rootDir } from "./server-config.js";
 
 /**
@@ -42,15 +36,11 @@ export function scanRoutes(pagesDir: string): RouteMap {
         entry.name === "page.ts" ||
         entry.name === "page.js"
       ) {
-        // page.tsx, page.ts, 또는 page.js 파일 발견
         // basePath가 /home이면 / 또는 /home으로 매핑
         const route = basePath === "/home" ? "/" : basePath;
 
-        // 동적 import를 위한 경로 생성 (dist/pages/ 디렉토리 기준)
-        // fullPath: /Users/.../resecof/dist/pages/home/page.js
-        // 서버는 dist/server/에서 실행되므로 ../pages/로 접근
+        // 동적 import를 위한 경로 생성
         const relativePath = fullPath.replace(pagesDir + "/", "");
-        // 이미 .js 파일이므로 확장자 변경 불필요
         const importPath = `../pages/${relativePath}`;
 
         const routeLoader = async () => {
@@ -64,11 +54,6 @@ export function scanRoutes(pagesDir: string): RouteMap {
               error?.code === "ERR_MODULE_NOT_FOUND" &&
               error?.message?.includes("components")
             ) {
-              console.warn(
-                `⚠️ 클라이언트 컴포넌트 import 경고 (RSC 렌더러가 처리함): ${
-                  error.message.split("\n")[0]
-                }`
-              );
               // 클라이언트 컴포넌트 import 에러는 이미 서버 시작 시 가짜 모듈이 생성되었으므로
               // import 경로에 쿼리 파라미터를 추가하여 모듈 캐시를 우회
               const componentName =
@@ -79,7 +64,6 @@ export function scanRoutes(pagesDir: string): RouteMap {
               );
 
               // import 경로에 쿼리 파라미터를 추가하여 모듈 캐시 우회
-              // 가짜 모듈이 이미 생성되어 있으므로 이번에는 성공해야 함
               const cacheBustPath = `${importPath}?t=${Date.now()}`;
               try {
                 const module = await import(cacheBustPath);
@@ -106,7 +90,6 @@ export function scanRoutes(pagesDir: string): RouteMap {
                     "utf-8"
                   );
 
-                  // 다시 import 시도 (캐시 우회)
                   const module = await import(`${importPath}?t=${Date.now()}`);
                   return module.default;
                 }
