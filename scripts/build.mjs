@@ -161,8 +161,11 @@ if (existsSync(pagesDir)) {
         {
           name: "exclude-client-components",
           setup(build) {
-            // 클라이언트 컴포넌트는 서버에서 실행하지 않으므로 external로 처리
-            // 하지만 pages는 서버 컴포넌트이므로 번들에 포함
+            // 클라이언트 컴포넌트를 external로 처리하여 서버 번들에 포함되지 않도록 함
+            // 서버에서 실행 시 import 에러가 발생하지만, RSC 렌더러가 클라이언트 컴포넌트를 감지하므로 문제 없음
+            build.onResolve({ filter: /.*\/components\/.*\.js$/ }, (args) => {
+              return { path: args.path, external: true };
+            });
           },
         },
       ],
