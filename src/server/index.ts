@@ -147,7 +147,9 @@ async function handleRSCRequest(req: express.Request, res: express.Response) {
 
 // HTML 페이지 반환
 function sendHTMLPage(req: express.Request, res: express.Response) {
-  const html = readFileSync(join(publicDir, "index.html"), "utf-8");
+  // public/index.html은 프로젝트 루트의 public/ 디렉토리에 있음
+  const htmlPath = join(rootDir, "public", "index.html");
+  const html = readFileSync(htmlPath, "utf-8");
   res.send(html);
 }
 

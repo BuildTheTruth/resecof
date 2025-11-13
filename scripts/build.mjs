@@ -178,7 +178,7 @@ console.log("🔧 서버 번들 생성 중...");
 await esbuild.build({
   entryPoints: [join(rootDir, "src", "server", "index.ts")],
   bundle: true,
-  outfile: join(serverDir, "entry.js"),
+  outfile: join(serverDir, "index.js"),
   format: "esm",
   platform: "node",
   target: "node18",
@@ -202,11 +202,11 @@ await esbuild.build({
   ],
 });
 
-console.log("✅ 서버 번들 생성 완료: dist/server/entry.js");
+console.log("✅ 서버 번들 생성 완료: dist/server/index.js");
 
 console.log("");
 console.log("✨ 빌드 완료!");
 console.log("");
 console.log("실행하려면:");
 console.log("  npm install  # 의존성 설치");
-console.log("  node dist/server/entry.js  # 서버 실행");
+console.log("  node dist/server/index.js  # 서버 실행");
