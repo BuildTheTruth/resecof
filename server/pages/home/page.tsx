@@ -1,7 +1,7 @@
 import React from "react";
 // 클라이언트 컴포넌트를 직접 import
 // 서버 번들에서는 external로 처리되고, 클라이언트 번들에 포함됨
-import Counter from "../../../client/components/Counter.client.js";
+import Counter from "../../../client/components/Counter.js";
 
 /**
  * 서버 컴포넌트: Home 페이지

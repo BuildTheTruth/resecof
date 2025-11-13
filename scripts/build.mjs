@@ -47,11 +47,7 @@ const clientBuildResult = await esbuild.build({
     {
       name: "exclude-server",
       setup(build) {
-        // .server.* 파일을 external로 처리
-        build.onResolve({ filter: /\.server\./ }, (args) => {
-          return { path: args.path, external: true };
-        });
-        // server/ 디렉토리도 external로 처리
+        // server/ 디렉토리를 external로 처리
         build.onResolve({ filter: /^server\// }, (args) => {
           return { path: args.path, external: true };
         });
@@ -123,13 +119,13 @@ console.log(
   "✅ 클라이언트 매니페스트 생성 완료: dist/react-client-manifest.json"
 );
 
-// 3. server/app/ 디렉토리 트랜스파일 (파일 기반 라우터)
-const appDir = join(rootDir, "server", "app");
-const distAppDir = join(distDir, "server", "app");
-if (existsSync(appDir)) {
-  console.log("📁 app/ 디렉토리 트랜스파일 중...");
+// 3. server/pages/ 디렉토리 트랜스파일 (파일 기반 라우터)
+const pagesDir = join(rootDir, "server", "pages");
+const distPagesDir = join(distDir, "server", "pages");
+if (existsSync(pagesDir)) {
+  console.log("📁 server/pages/ 디렉토리 트랜스파일 중...");
 
-  // app/ 디렉토리에서 모든 .server.tsx 파일 찾기
+  // pages/ 디렉토리에서 모든 page.tsx 파일 찾기
   function findPageFiles(dir, fileList = []) {
     const files = readdirSync(dir);
     for (const file of files) {
@@ -137,21 +133,21 @@ if (existsSync(appDir)) {
       const stat = statSync(filePath);
       if (stat.isDirectory()) {
         findPageFiles(filePath, fileList);
-      } else if (file.endsWith(".server.tsx") || file.endsWith(".server.ts")) {
+      } else if (file === "page.tsx" || file === "page.ts") {
         fileList.push(filePath);
       }
     }
     return fileList;
   }
 
-  const pageFiles = findPageFiles(appDir);
+  const pageFiles = findPageFiles(pagesDir);
 
   if (pageFiles.length === 0) {
-    console.log("⚠️ app/ 디렉토리에 page.server.tsx 파일이 없습니다.");
+    console.log("⚠️ server/pages/ 디렉토리에 page.tsx 파일이 없습니다.");
   } else {
     await esbuild.build({
       entryPoints: pageFiles,
-      outdir: distAppDir,
+      outdir: distPagesDir,
       format: "esm",
       platform: "node",
       target: "node18",
@@ -162,18 +158,20 @@ if (existsSync(appDir)) {
         {
           name: "exclude-client",
           setup(build) {
-            // .client.* 파일을 external로 처리
-            build.onResolve({ filter: /\.client\./ }, (args) => {
+            // client/ 디렉토리의 파일을 external로 처리
+            build.onResolve({ filter: /^client\// }, (args) => {
               return { path: args.path, external: true };
             });
           },
         },
       ],
     });
-    console.log("✅ server/app/ 디렉토리 트랜스파일 완료: dist/server/app/");
+    console.log(
+      "✅ server/pages/ 디렉토리 트랜스파일 완료: dist/server/pages/"
+    );
   }
 } else {
-  console.log("⚠️ server/app/ 디렉토리가 없습니다. 건너뜁니다.");
+  console.log("⚠️ server/pages/ 디렉토리가 없습니다. 건너뜁니다.");
 }
 
 // 4. 서버 번들 생성 (.server.* 파일만 포함)
@@ -192,11 +190,7 @@ await esbuild.build({
     {
       name: "exclude-client",
       setup(build) {
-        // .client.* 파일을 external로 처리
-        build.onResolve({ filter: /\.client\./ }, (args) => {
-          return { path: args.path, external: true };
-        });
-        // client/ 디렉토리도 external로 처리
+        // client/ 디렉토리를 external로 처리
         build.onResolve({ filter: /^client\// }, (args) => {
           return { path: args.path, external: true };
         });

@@ -1,7 +1,7 @@
 import React from "react";
 // 클라이언트 컴포넌트를 직접 import
 // 서버 번들에서는 external로 처리되고, 클라이언트 번들에 포함됨
-import Counter from "../../../client/components/Counter.client.js";
+import Counter from "../../../client/components/Counter.js";
 
 /**
  * 서버 컴포넌트: About 페이지
@@ -35,7 +35,7 @@ export default function About() {
             ✅ <code>fetchRSC</code> + <code>useState</code>로 점진 복원
           </li>
           <li>
-            ✅ 파일 기반 라우팅: <code>server/app/home/page.server.tsx</code> →{" "}
+            ✅ 파일 기반 라우팅: <code>server/pages/home/page.tsx</code> →{" "}
             <code>/</code>
           </li>
           <li>✅ Accept 헤더로 HTML/RSC 요청 구분</li>

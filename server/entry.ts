@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { readFileSync, readdirSync, statSync, existsSync } from "fs";
 import { renderToRSCStream } from "./rsc-renderer.js";
-import App from "./components/App.server.js";
+import App from "./components/App.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,14 +25,14 @@ try {
   console.warn("⚠️ 클라이언트 매니페스트를 로드할 수 없습니다:", error);
 }
 
-// 파일 기반 라우터: app/ 디렉토리를 스캔하여 라우트 매핑 생성
+// 파일 기반 라우터: pages/ 디렉토리를 스캔하여 라우트 매핑 생성
 type RouteMap = Map<string, () => Promise<any>>;
 
-function scanRoutes(appDir: string): RouteMap {
+function scanRoutes(pagesDir: string): RouteMap {
   const routes = new Map<string, () => Promise<any>>();
 
-  if (!existsSync(appDir)) {
-    console.warn(`⚠️ app 디렉토리가 없습니다: ${appDir}`);
+  if (!existsSync(pagesDir)) {
+    console.warn(`⚠️ pages 디렉토리가 없습니다: ${pagesDir}`);
     return routes;
   }
 
@@ -48,20 +48,17 @@ function scanRoutes(appDir: string): RouteMap {
       if (entry.isDirectory()) {
         // 디렉토리인 경우 재귀적으로 스캔
         scanDirectory(fullPath, routePath);
-      } else if (
-        entry.name === "page.server.tsx" ||
-        entry.name === "page.server.ts"
-      ) {
-        // page.server.tsx 파일 발견
+      } else if (entry.name === "page.tsx" || entry.name === "page.ts") {
+        // page.tsx 파일 발견
         // basePath가 /home이면 / 또는 /home으로 매핑
         const route = basePath === "/home" ? "/" : basePath;
 
-        // 동적 import를 위한 경로 생성 (dist/server/app/ 디렉토리 기준)
-        // fullPath: /Users/.../resecof/server/app/home/page.server.tsx
-        // distPath: dist/server/app/home/page.server.js
-        const relativePath = fullPath.replace(appDir + "/", "");
+        // 동적 import를 위한 경로 생성 (dist/server/pages/ 디렉토리 기준)
+        // fullPath: /Users/.../resecof/server/pages/home/page.tsx
+        // distPath: dist/server/pages/home/page.js
+        const relativePath = fullPath.replace(pagesDir + "/", "");
         const distPath = relativePath.replace(/\.tsx?$/, ".js");
-        const importPath = `./app/${distPath}`;
+        const importPath = `./pages/${distPath}`;
 
         const routeLoader = async () => {
           try {
@@ -88,13 +85,13 @@ function scanRoutes(appDir: string): RouteMap {
     }
   }
 
-  scanDirectory(appDir);
+  scanDirectory(pagesDir);
   return routes;
 }
 
 // 라우트 매핑 생성
-const appDir = join(rootDir, "server", "app");
-const routes = scanRoutes(appDir);
+const pagesDir = join(rootDir, "server", "pages");
+const routes = scanRoutes(pagesDir);
 console.log(`📁 파일 기반 라우터: ${routes.size}개 라우트 발견`);
 
 const app = express();
