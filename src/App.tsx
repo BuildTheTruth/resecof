@@ -36,6 +36,7 @@ export default function App({ location, PageComponent, params }: AppProps) {
    */
   const isHomeActive = location === "/" || location === "/home";
   const isAboutActive = location === "/about";
+  const isBlogsActive = location.startsWith("/blogs");
 
   return (
     <div>
@@ -81,6 +82,22 @@ export default function App({ location, PageComponent, params }: AppProps) {
           }}
         >
           About
+        </button>
+        <button
+          data-navigate="/blogs/1"
+          style={{
+            padding: "10px 20px",
+            background: isBlogsActive ? "#fff" : "rgba(255,255,255,0.2)",
+            color: isBlogsActive ? "#6200ea" : "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontWeight: "bold",
+            fontSize: "14px",
+            transition: "all 0.2s",
+          }}
+        >
+          Blogs
         </button>
       </nav>
 
