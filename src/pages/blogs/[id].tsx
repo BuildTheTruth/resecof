@@ -1,5 +1,8 @@
+import { FAKE_POSTS, delay } from "../../server/__mock__.js";
+
 /**
  * 동적 라우트 예제: /blogs/[id]
+ * 서버 컴포넌트에서 데이터 페칭 사용
  *
  * 사용 예시:
  * - /blogs/1 → params.id = "1"
@@ -12,8 +15,37 @@ interface BlogPostProps {
   };
 }
 
-export default function BlogPost({ params }: BlogPostProps) {
-  const id = params?.id || "없음";
+/**
+ * 서버 컴포넌트: 비동기 데이터 페칭
+ * Promise를 반환하면 RSC 렌더러가 자동으로 Suspense 경계를 생성합니다.
+ */
+export default async function BlogPost({ params }: BlogPostProps) {
+  const id = params?.id || "1";
+
+  // 서버에서 직접 데이터 접근 (HTTP 요청 없이)
+  await delay(800); // 네트워크 지연 시뮬레이션
+  const post = FAKE_POSTS.find((p) => p.id === id);
+
+  // 포스트가 없으면 404 처리
+  if (!post) {
+    return (
+      <div
+        style={{
+          padding: "30px",
+          background: "#fff",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        }}
+      >
+        <h1 style={{ marginBottom: "20px", color: "#f44336" }}>
+          ❌ 포스트를 찾을 수 없습니다
+        </h1>
+        <p style={{ color: "#666", fontSize: "16px" }}>
+          ID <code>{id}</code>에 해당하는 포스트가 존재하지 않습니다.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -25,16 +57,60 @@ export default function BlogPost({ params }: BlogPostProps) {
       }}
     >
       <h1 style={{ marginBottom: "20px", color: "#6200ea" }}>
-        📝 블로그 포스트
+        📝 {post.title}
       </h1>
       <div style={{ marginBottom: "20px" }}>
-        <p style={{ fontSize: "18px", marginBottom: "10px" }}>
-          <strong>포스트 ID:</strong> <code>{id}</code>
-        </p>
-        <p style={{ color: "#666", fontSize: "14px" }}>
-          이 페이지는 동적 라우트를 사용합니다. URL의 <code>/blogs/[id]</code>{" "}
-          부분에서 <code>id</code> 파라미터를 추출하여 표시합니다.
-        </p>
+        <div
+          style={{
+            display: "flex",
+            gap: "15px",
+            marginBottom: "15px",
+            fontSize: "14px",
+            color: "#666",
+          }}
+        >
+          <span>
+            <strong>작성자:</strong> {post.author}
+          </span>
+          <span>
+            <strong>작성일:</strong> {post.createdAt}
+          </span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            flexWrap: "wrap",
+            marginBottom: "20px",
+          }}
+        >
+          {post.tags.map((tag) => (
+            <span
+              key={tag}
+              style={{
+                padding: "4px 12px",
+                background: "#e3f2fd",
+                color: "#1976d2",
+                borderRadius: "12px",
+                fontSize: "12px",
+                fontWeight: "500",
+              }}
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+        <div
+          style={{
+            padding: "20px",
+            background: "#f5f5f5",
+            borderRadius: "6px",
+            lineHeight: "1.8",
+            fontSize: "16px",
+          }}
+        >
+          {post.content}
+        </div>
       </div>
 
       <div

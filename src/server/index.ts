@@ -8,6 +8,8 @@ import {
 } from "../utils/server-config.js";
 import { scanRoutes } from "../utils/route-scanner.js";
 import { createRouteHandler } from "../utils/route-handlers.js";
+import { getPosts, getPost } from "./posts.js";
+import { getUser } from "./users.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,9 +27,20 @@ console.log(
 
 const app = express();
 
+// JSON 파싱 미들웨어
+app.use(express.json());
+
 const publicDir = join(__dirname, "..", "public");
 app.use("/dist/public", express.static(publicDir));
 console.log(`📁 정적 파일 디렉토리: ${publicDir}`);
+
+// API 라우트 등록
+app.get("/api/posts", getPosts);
+app.get("/api/posts/:id", getPost);
+app.get("/api/users/:id", getUser);
+console.log(
+  "📡 API 엔드포인트 등록: /api/posts, /api/posts/:id, /api/users/:id"
+);
 
 const handleRoute = createRouteHandler(
   staticRoutes,
