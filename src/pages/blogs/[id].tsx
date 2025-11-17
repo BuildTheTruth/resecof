@@ -1,5 +1,3 @@
-import { getPost } from "../../lib/data/index.js";
-
 /**
  * 동적 라우트 예제: /blogs/[id]
  * 서버 컴포넌트에서 데이터 페칭
@@ -9,11 +7,7 @@ import { getPost } from "../../lib/data/index.js";
  * - /blogs/hello-world → params.id = "hello-world"
  */
 
-interface BlogPostProps {
-  params?: {
-    id?: string;
-  };
-}
+import { getPost } from "../../server/posts";
 
 /**
  * 서버 컴포넌트: 비동기 데이터 페칭
@@ -24,7 +18,7 @@ interface BlogPostProps {
  * 3. Promise를 반환하면 RSC 렌더러가 자동으로 Suspense 경계 생성
  * 4. 서버에서 실행되므로 HTTP 요청 없이 직접 데이터 소스에 접근
  */
-export default async function BlogPost({ params }: BlogPostProps) {
+export default async function BlogPost({ params }: { params: { id: string } }) {
   const id = params?.id || "1";
 
   // 데이터 페칭 함수 호출 (서버에서 실행되므로 HTTP 요청 없음)

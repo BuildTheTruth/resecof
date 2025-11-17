@@ -1,15 +1,12 @@
 import express from "express";
-import { join } from "path";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { dirname } from "path";
-import {
-  loadClientManifest,
-  createFakeClientComponents,
-} from "../utils/server-config.js";
-import { scanRoutes } from "../utils/route-scanner.js";
 import { createRouteHandler } from "../utils/route-handlers.js";
-import { getPosts, getPost } from "./posts.js";
-import { getUser } from "./users.js";
+import { scanRoutes } from "../utils/route-scanner.js";
+import {
+  createFakeClientComponents,
+  loadClientManifest,
+} from "../utils/server-config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,14 +30,6 @@ app.use(express.json());
 const publicDir = join(__dirname, "..", "public");
 app.use("/dist/public", express.static(publicDir));
 console.log(`📁 정적 파일 디렉토리: ${publicDir}`);
-
-// API 라우트 등록
-app.get("/api/posts", getPosts);
-app.get("/api/posts/:id", getPost);
-app.get("/api/users/:id", getUser);
-console.log(
-  "📡 API 엔드포인트 등록: /api/posts, /api/posts/:id, /api/users/:id"
-);
 
 const handleRoute = createRouteHandler(
   staticRoutes,

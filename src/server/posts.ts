@@ -1,62 +1,30 @@
-import { Request, Response } from "express";
-import {
-  getPosts as fetchPosts,
-  getPost as fetchPost,
-} from "../lib/data/index.js";
-
 /**
- * 포스트 관련 API 엔드포인트
+ * 포스트 관련 데이터 페칭 함수
  */
 
+import { FAKE_POSTS, delay } from "./__mock__/index.js";
+
+export type Post = (typeof FAKE_POSTS)[0];
+
 /**
- * GET /api/posts
  * 블로그 포스트 목록 가져오기
+ * @param delayMs - 지연 시간 (밀리초, 기본값: 500ms)
  */
-export async function getPosts(req: Request, res: Response) {
-  try {
-    const delayMs = parseInt(req.query.delay as string) || 500;
-    const posts = await fetchPosts(delayMs);
-
-    res.json({
-      success: true,
-      data: posts,
-    });
-  } catch (error) {
-    console.error("❌ 포스트 목록 조회 에러:", error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
+export async function getPosts(delayMs: number = 500): Promise<Post[]> {
+  await delay(delayMs);
+  return FAKE_POSTS;
 }
 
 /**
- * GET /api/posts/:id
  * 특정 블로그 포스트 가져오기
+ * @param id - 포스트 ID
+ * @param delayMs - 지연 시간 (밀리초, 기본값: 800ms)
  */
-export async function getPost(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-    const delayMs = parseInt(req.query.delay as string) || 800;
-    const post = await fetchPost(id, delayMs);
-
-    if (!post) {
-      res.status(404).json({
-        success: false,
-        error: `Post with id "${id}" not found`,
-      });
-      return;
-    }
-
-    res.json({
-      success: true,
-      data: post,
-    });
-  } catch (error) {
-    console.error("❌ 포스트 조회 에러:", error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
+export async function getPost(
+  id: string,
+  delayMs: number = 800
+): Promise<Post | null> {
+  await delay(delayMs);
+  const post = FAKE_POSTS.find((p) => p.id === id);
+  return post || null;
 }

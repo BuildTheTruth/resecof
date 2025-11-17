@@ -1,37 +1,21 @@
-import { Request, Response } from "express";
-import { getUser as fetchUser } from "../lib/data/index.js";
-
 /**
- * 사용자 관련 API 엔드포인트
+ * 사용자 관련 데이터 페칭 함수
  */
 
+import { FAKE_USERS, delay } from "./__mock__/index.js";
+
+export type User = (typeof FAKE_USERS)[0];
+
 /**
- * GET /api/users/:id
- * 특정 사용자 정보 가져오기
+ * 사용자 정보 가져오기
+ * @param id - 사용자 ID
+ * @param delayMs - 지연 시간 (밀리초, 기본값: 600ms)
  */
-export async function getUser(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-    const delayMs = parseInt(req.query.delay as string) || 600;
-    const user = await fetchUser(id, delayMs);
-
-    if (!user) {
-      res.status(404).json({
-        success: false,
-        error: `User with id "${id}" not found`,
-      });
-      return;
-    }
-
-    res.json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    console.error("❌ 사용자 조회 에러:", error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
+export async function getUser(
+  id: string,
+  delayMs: number = 600
+): Promise<User | null> {
+  await delay(delayMs);
+  const user = FAKE_USERS.find((u) => u.id === id);
+  return user || null;
 }

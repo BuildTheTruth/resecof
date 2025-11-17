@@ -122,7 +122,70 @@ console.log(
   "✅ 클라이언트 매니페스트 생성 완료: dist/react-client-manifest.json"
 );
 
-// 3. src/pages/ 디렉토리 트랜스파일 (파일 기반 라우터)
+// 3. src/App.tsx 트랜스파일 (서버 컴포넌트)
+const appFile = join(rootDir, "src", "App.tsx");
+const distAppFile = join(distDir, "App.js");
+
+// App.tsx 트랜스파일
+if (existsSync(appFile)) {
+  console.log("📁 src/App.tsx 트랜스파일 중...");
+  await esbuild.build({
+    entryPoints: [appFile],
+    outfile: distAppFile,
+    format: "esm",
+    platform: "node",
+    target: "node18",
+    jsx: "automatic",
+    sourcemap: true,
+    packages: "external",
+  });
+  console.log("✅ src/App.tsx 트랜스파일 완료: dist/App.js");
+}
+
+// 3-1. src/server/__mock__/ 및 server/posts.ts, server/users.ts 트랜스파일
+// (pages/에서 import하므로 개별적으로 트랜스파일 필요)
+const serverMockFile = join(rootDir, "src", "server", "__mock__", "index.ts");
+const serverPostsFile = join(rootDir, "src", "server", "posts.ts");
+const serverUsersFile = join(rootDir, "src", "server", "users.ts");
+const distServerDir = join(distDir, "server");
+
+if (!existsSync(distServerDir)) {
+  mkdirSync(distServerDir, { recursive: true });
+}
+if (!existsSync(join(distServerDir, "__mock__"))) {
+  mkdirSync(join(distServerDir, "__mock__"), { recursive: true });
+}
+
+const serverFilesToTranspile = [];
+if (existsSync(serverMockFile)) {
+  serverFilesToTranspile.push(serverMockFile);
+}
+if (existsSync(serverPostsFile)) {
+  serverFilesToTranspile.push(serverPostsFile);
+}
+if (existsSync(serverUsersFile)) {
+  serverFilesToTranspile.push(serverUsersFile);
+}
+
+if (serverFilesToTranspile.length > 0) {
+  console.log("📁 src/server/ (posts, users, __mock__) 트랜스파일 중...");
+  await esbuild.build({
+    entryPoints: serverFilesToTranspile,
+    outdir: distDir,
+    outbase: join(rootDir, "src"),
+    format: "esm",
+    platform: "node",
+    target: "node18",
+    jsx: "automatic",
+    sourcemap: true,
+    packages: "external",
+  });
+  console.log(
+    "✅ src/server/ (posts, users, __mock__) 트랜스파일 완료: dist/server/"
+  );
+}
+
+// 4. src/pages/ 디렉토리 트랜스파일 (파일 기반 라우터)
 const pagesDir = join(rootDir, "src", "pages");
 const distPagesDir = join(distDir, "pages");
 if (existsSync(pagesDir)) {
@@ -154,7 +217,8 @@ if (existsSync(pagesDir)) {
   } else {
     await esbuild.build({
       entryPoints: pageFiles,
-      outdir: distPagesDir,
+      outdir: distDir,
+      outbase: join(rootDir, "src"),
       format: "esm",
       platform: "node",
       target: "node18",
@@ -170,6 +234,10 @@ if (existsSync(pagesDir)) {
             build.onResolve({ filter: /.*\/components\/.*\.js$/ }, (args) => {
               return { path: args.path, external: true };
             });
+            // server/ 디렉토리를 external로 처리 (별도로 트랜스파일됨)
+            build.onResolve({ filter: /.*\/server\/.*\.js$/ }, (args) => {
+              return { path: args.path, external: true };
+            });
           },
         },
       ],
@@ -180,7 +248,7 @@ if (existsSync(pagesDir)) {
   console.log("⚠️ src/pages/ 디렉토리가 없습니다. 건너뜁니다.");
 }
 
-// 4. 서버 번들 생성
+// 5. 서버 번들 생성
 console.log("🔧 서버 번들 생성 중...");
 await esbuild.build({
   entryPoints: [join(rootDir, "src", "server", "index.ts")],
@@ -204,6 +272,33 @@ await esbuild.build({
         build.onResolve({ filter: /^\.\.\/components\// }, (args) => {
           return { path: args.path, external: true };
         });
+        // src/pages/ 디렉토리를 external로 처리 (별도로 트랜스파일됨)
+        build.onResolve({ filter: /^src\/pages\// }, (args) => {
+          return { path: args.path, external: true };
+        });
+        build.onResolve({ filter: /^\.\.\/pages\// }, (args) => {
+          return { path: args.path, external: true };
+        });
+        // src/App.tsx를 external로 처리 (별도로 트랜스파일됨)
+        build.onResolve({ filter: /^src\/App\.tsx$/ }, (args) => {
+          return { path: args.path, external: true };
+        });
+        build.onResolve({ filter: /^\.\.\/App\.tsx$/ }, (args) => {
+          return { path: args.path, external: true };
+        });
+        // src/server/posts.ts, server/users.ts, server/__mock__/를 external로 처리 (별도로 트랜스파일됨)
+        build.onResolve(
+          { filter: /^src\/server\/(posts|users|__mock__)/ },
+          (args) => {
+            return { path: args.path, external: true };
+          }
+        );
+        build.onResolve(
+          { filter: /^\.\.\/server\/(posts|users|__mock__)/ },
+          (args) => {
+            return { path: args.path, external: true };
+          }
+        );
       },
     },
   ],
