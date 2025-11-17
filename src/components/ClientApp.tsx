@@ -1,27 +1,52 @@
 import React, { Suspense, useState, useTransition } from "react";
-import { createRoot } from "react-dom/client";
-import Counter from "./components/Counter.js";
-import { fetchRSC, registerClientComponent } from "./utils/rsc-client.js";
+import { getRSCPayload } from "../utils/rsc-cache.js";
 
-// 클라이언트 컴포넌트 등록
-registerClientComponent("Counter", Counter);
+// 로딩 스피너 컴포넌트
+export function LoadingSpinner() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "200px",
+        color: "#666",
+        fontSize: "18px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "15px",
+        }}
+      >
+        <div
+          style={{
+            width: "40px",
+            height: "40px",
+            border: "4px solid #f3f3f3",
+            borderTop: "4px solid #6200ea",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }}
+        >
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+        <div>RSC 페이로드 로딩 중...</div>
+      </div>
+    </div>
+  );
+}
 
 // 현재 위치를 저장하는 전역 상태
 let currentLocation = window.location.pathname;
-
-// RSC Cache
-const rscCache = new Map<string, Promise<any>>();
-
-// RSC 페이로드를 가져오는 함수 (캐싱 포함)
-function getRSCPayload(location: string) {
-  if (!rscCache.has(location)) {
-    rscCache.set(location, fetchRSC(location));
-  }
-  return rscCache.get(location)!;
-}
-
-// 초기 RSC 페이로드
-let initialRSCPayload = getRSCPayload(currentLocation);
 
 // Content 컴포넌트: RSC 데이터를 표시
 function Content({ data }: { data: Promise<any> }) {
@@ -63,8 +88,8 @@ function Content({ data }: { data: Promise<any> }) {
 }
 
 // Root 컴포넌트
-function Root() {
-  const [rscPayload, setRscPayload] = useState(initialRSCPayload);
+export function Root() {
+  const [rscPayload, setRscPayload] = useState(getRSCPayload(currentLocation));
   const [isPending, startTransition] = useTransition();
 
   // 네비게이션 핸들러
@@ -151,73 +176,4 @@ function Root() {
       </div>
     </div>
   );
-}
-
-// 앱 초기화
-function initApp() {
-  const rootElement = document.getElementById("root");
-
-  if (!rootElement) {
-    throw new Error("Root element not found");
-  }
-
-  const root = createRoot(rootElement);
-
-  // React.Suspense로 감싸서 로딩 상태 처리
-  root.render(
-    <Suspense
-      fallback={
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "200px",
-            color: "#666",
-            fontSize: "18px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "15px",
-            }}
-          >
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                border: "4px solid #f3f3f3",
-                borderTop: "4px solid #6200ea",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-              }}
-            >
-              <style>{`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}</style>
-            </div>
-            <div>RSC 페이로드 로딩 중...</div>
-          </div>
-        </div>
-      }
-    >
-      <Root />
-    </Suspense>
-  );
-
-  console.log("✨ React Server Components 클라이언트 초기화 완료");
-  console.log("📡 RSC 스트리밍으로 컴포넌트를 받아오고 있습니다");
-}
-
-// DOM이 로드되면 앱 초기화
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initApp);
-} else {
-  initApp();
 }

@@ -29,7 +29,7 @@ console.log("🔨 빌드 시작...");
 // 1. 클라이언트 번들 생성
 console.log("📦 클라이언트 번들 생성 중...");
 const clientBuildResult = await esbuild.build({
-  entryPoints: [join(rootDir, "src", "main.tsx")],
+  entryPoints: [join(rootDir, "src", "main.ts")],
   bundle: true,
   outdir: publicDir,
   format: "esm",
