@@ -18,8 +18,10 @@ const clientManifest = loadClientManifest();
 createFakeClientComponents(["Counter"]);
 
 const pagesDir = join(__dirname, "..", "..", "dist", "pages");
-const routes = scanRoutes(pagesDir);
-console.log(`📁 파일 기반 라우터: ${routes.size}개 라우트 발견`);
+const { staticRoutes, dynamicRoutes } = scanRoutes(pagesDir);
+console.log(
+  `📁 파일 기반 라우터: ${staticRoutes.size}개 정적 라우트, ${dynamicRoutes.size}개 동적 라우트 발견`
+);
 
 const app = express();
 
@@ -27,17 +29,30 @@ const publicDir = join(__dirname, "..", "public");
 app.use("/dist/public", express.static(publicDir));
 console.log(`📁 정적 파일 디렉토리: ${publicDir}`);
 
-const handleRoute = createRouteHandler(routes, clientManifest);
+const handleRoute = createRouteHandler(
+  staticRoutes,
+  dynamicRoutes,
+  clientManifest
+);
 
-for (const route of routes.keys()) {
+// 정적 라우트 등록
+for (const route of staticRoutes.keys()) {
   app.get(route, handleRoute);
 }
 
-app.get("*", (req, res) => {
-  res.status(404).send("404 Not Found");
-});
+// 동적 라우트는 와일드카드로 처리 (정적 라우트보다 나중에 등록)
+app.get("*", handleRoute);
 
 app.listen(PORT, () => {
   console.log(`✨ 서버가 http://localhost:${PORT} 에서 실행 중입니다`);
-  console.log(`📡 등록된 라우트: ${Array.from(routes.keys()).join(", ")}`);
+  console.log(
+    `📡 등록된 정적 라우트: ${Array.from(staticRoutes.keys()).join(", ")}`
+  );
+  if (dynamicRoutes.size > 0) {
+    console.log(
+      `📡 등록된 동적 라우트: ${Array.from(dynamicRoutes.values())
+        .map((r) => r.pattern.toString())
+        .join(", ")}`
+    );
+  }
 });

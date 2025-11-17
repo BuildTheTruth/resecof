@@ -128,7 +128,7 @@ const distPagesDir = join(distDir, "pages");
 if (existsSync(pagesDir)) {
   console.log("📁 src/pages/ 디렉토리 트랜스파일 중...");
 
-  // pages/ 디렉토리에서 모든 page.tsx 파일 찾기
+  // pages/ 디렉토리에서 모든 page.tsx 파일과 동적 라우트 파일 찾기
   function findPageFiles(dir, fileList = []) {
     const files = readdirSync(dir);
     for (const file of files) {
@@ -136,7 +136,11 @@ if (existsSync(pagesDir)) {
       const stat = statSync(filePath);
       if (stat.isDirectory()) {
         findPageFiles(filePath, fileList);
-      } else if (file === "page.tsx" || file === "page.ts") {
+      } else if (
+        file === "page.tsx" ||
+        file === "page.ts" ||
+        file.match(/^\[.+\]\.(tsx?|jsx?)$/) // 동적 라우트 파일 (예: [id].tsx)
+      ) {
         fileList.push(filePath);
       }
     }
