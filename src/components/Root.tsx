@@ -1,3 +1,5 @@
+"use client";
+
 import React, { Suspense, useState, useTransition } from "react";
 import { getRSCPayload } from "../utils/rsc-cache.js";
 import { Content } from "./Content.js";
