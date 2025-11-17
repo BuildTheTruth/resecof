@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { FAKE_USERS, delay } from "./__mock__/index.js";
+import { getUser as fetchUser } from "../lib/data/index.js";
 
 /**
  * 사용자 관련 API 엔드포인트
@@ -13,9 +13,7 @@ export async function getUser(req: Request, res: Response) {
   try {
     const { id } = req.params;
     const delayMs = parseInt(req.query.delay as string) || 600;
-    await delay(delayMs);
-
-    const user = FAKE_USERS.find((u) => u.id === id);
+    const user = await fetchUser(id, delayMs);
 
     if (!user) {
       res.status(404).json({

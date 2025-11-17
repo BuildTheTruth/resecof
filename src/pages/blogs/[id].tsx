@@ -1,6 +1,8 @@
+import { getPost } from "../../lib/data/index.js";
+
 /**
  * 동적 라우트 예제: /blogs/[id]
- * 서버 컴포넌트에서 서버 API를 통해 데이터 페칭
+ * 서버 컴포넌트에서 데이터 페칭
  *
  * 사용 예시:
  * - /blogs/1 → params.id = "1"
@@ -13,22 +15,23 @@ interface BlogPostProps {
   };
 }
 
-// API 기본 URL (서버 컴포넌트는 서버에서 실행되므로 localhost 사용)
-const API_BASE_URL = "http://localhost:3000";
-
 /**
  * 서버 컴포넌트: 비동기 데이터 페칭
- * 서버 API 엔드포인트를 통해 데이터를 가져옵니다.
- * Promise를 반환하면 RSC 렌더러가 자동으로 Suspense 경계를 생성합니다.
+ *
+ * RSC에서의 데이터 페칭 패턴:
+ * 1. async 함수로 선언
+ * 2. getPost(id) 같은 데이터 페칭 함수 호출
+ * 3. Promise를 반환하면 RSC 렌더러가 자동으로 Suspense 경계 생성
+ * 4. 서버에서 실행되므로 HTTP 요청 없이 직접 데이터 소스에 접근
  */
 export default async function BlogPost({ params }: BlogPostProps) {
   const id = params?.id || "1";
 
-  // 서버 API를 통해 데이터 페칭
-  const response = await fetch(`${API_BASE_URL}/api/posts/${id}?delay=800`);
+  // 데이터 페칭 함수 호출 (서버에서 실행되므로 HTTP 요청 없음)
+  const post = await getPost(id);
 
-  if (response.status === 404) {
-    // 포스트가 없으면 404 처리
+  // 포스트가 없으면 404 처리
+  if (!post) {
     return (
       <div
         style={{
@@ -47,17 +50,6 @@ export default async function BlogPost({ params }: BlogPostProps) {
       </div>
     );
   }
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch post: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result.error || "Failed to fetch post");
-  }
-
-  const post = result.data;
 
   return (
     <div

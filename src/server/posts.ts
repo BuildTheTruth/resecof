@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
-import { FAKE_POSTS, delay } from "./__mock__/index.js";
+import {
+  getPosts as fetchPosts,
+  getPost as fetchPost,
+} from "../lib/data/index.js";
 
 /**
  * 포스트 관련 API 엔드포인트
@@ -12,11 +15,11 @@ import { FAKE_POSTS, delay } from "./__mock__/index.js";
 export async function getPosts(req: Request, res: Response) {
   try {
     const delayMs = parseInt(req.query.delay as string) || 500;
-    await delay(delayMs);
+    const posts = await fetchPosts(delayMs);
 
     res.json({
       success: true,
-      data: FAKE_POSTS,
+      data: posts,
     });
   } catch (error) {
     console.error("❌ 포스트 목록 조회 에러:", error);
@@ -35,9 +38,7 @@ export async function getPost(req: Request, res: Response) {
   try {
     const { id } = req.params;
     const delayMs = parseInt(req.query.delay as string) || 800;
-    await delay(delayMs);
-
-    const post = FAKE_POSTS.find((p) => p.id === id);
+    const post = await fetchPost(id, delayMs);
 
     if (!post) {
       res.status(404).json({
