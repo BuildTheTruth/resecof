@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { FAKE_POSTS, delay } from "./__mock__.js";
+import { FAKE_POSTS, delay } from "./__mock__/index.js";
 
 /**
  * 포스트 관련 API 엔드포인트

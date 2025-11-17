@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { FAKE_USERS, delay } from "./__mock__.js";
+import { FAKE_USERS, delay } from "./__mock__/index.js";
 
 /**
  * 사용자 관련 API 엔드포인트
