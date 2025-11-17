@@ -1,4 +1,7 @@
 import { Response } from "express";
+import { readFileSync, existsSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 /**
  * RSC 렌더러 - renderToPipeableStream을 모방한 간단한 구현
@@ -203,19 +206,124 @@ function renderProps(props: any, context: RenderContext): any {
   return result;
 }
 
+// 'use client' 지시어 확인 결과 캐시
+const useClientCache = new Map<string, boolean>();
+
+/**
+ * 파일에서 'use client' 지시어 확인
+ */
+function hasUseClientDirective(filePath: string): boolean {
+  // 캐시 확인
+  if (useClientCache.has(filePath)) {
+    return useClientCache.get(filePath)!;
+  }
+
+  try {
+    if (!existsSync(filePath)) {
+      useClientCache.set(filePath, false);
+      return false;
+    }
+
+    const content = readFileSync(filePath, "utf-8");
+    // 파일 시작 부분에서 'use client' 확인 (주석 제거 전에 확인)
+    const trimmed = content.trim();
+    const hasDirective =
+      trimmed.startsWith('"use client"') ||
+      trimmed.startsWith("'use client'") ||
+      trimmed.startsWith("`use client`") ||
+      /^["'`]use client["'`]/.test(trimmed);
+
+    useClientCache.set(filePath, hasDirective);
+    return hasDirective;
+  } catch (error) {
+    useClientCache.set(filePath, false);
+    return false;
+  }
+}
+
+/**
+ * 컴포넌트 함수의 원본 파일 경로 찾기
+ */
+function findComponentFilePath(component: any): string | null {
+  // __isClientComponent가 이미 설정되어 있으면 파일 경로를 찾을 필요 없음
+  // 하지만 'use client' 확인을 위해 경로를 찾아야 함
+
+  // 1. require.cache에서 찾기 (CommonJS 모듈)
+  if (typeof require !== "undefined" && require.cache) {
+    for (const modulePath in require.cache) {
+      const module = require.cache[modulePath];
+      if (module && module.exports) {
+        // default export 확인
+        if (
+          module.exports.default === component ||
+          module.exports === component
+        ) {
+          return modulePath;
+        }
+        // named export 확인
+        for (const key in module.exports) {
+          if (module.exports[key] === component) {
+            return modulePath;
+          }
+        }
+      }
+    }
+  }
+
+  // 2. 컴포넌트 이름으로 추론 (src/components/ 경로 우선)
+  const componentName = component.name;
+  if (componentName) {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const projectRoot = join(__dirname, "..", "..");
+
+    // 소스 파일 경로 우선 시도 (TypeScript/JSX 파일)
+    const possiblePaths = [
+      join(projectRoot, "src", "components", `${componentName}.tsx`),
+      join(projectRoot, "src", "components", `${componentName}.ts`),
+      join(projectRoot, "src", "components", `${componentName}.jsx`),
+      join(projectRoot, "src", "components", `${componentName}.js`),
+    ];
+
+    for (const path of possiblePaths) {
+      if (existsSync(path)) {
+        return path;
+      }
+    }
+  }
+
+  return null;
+}
+
 /**
  * 클라이언트 컴포넌트 감지
  */
 function isClientComponent(component: any): boolean {
-  // 'use client' 마킹이 있는지 확인
-  // 실제로는 번들러가 이를 처리하지만, 여기서는 간단하게 구현
-  const name = component.name || "";
-  return (
-    component.__isClientComponent === true ||
-    name.toLowerCase().includes("client") ||
-    name === "Counter" || // 명시적으로 Counter를 클라이언트 컴포넌트로 지정
-    false
-  );
+  // 1. 기존 __isClientComponent 마킹 확인 (하위 호환성)
+  if (component.__isClientComponent === true) {
+    return true;
+  }
+
+  // 2. 파일에서 'use client' 지시어 확인
+  const filePath = findComponentFilePath(component);
+  if (filePath) {
+    // 컴파일된 파일인 경우 소스 파일 경로로 변환 시도
+    let sourcePath = filePath;
+    if (filePath.includes("dist")) {
+      sourcePath = filePath
+        .replace(/dist[\/\\]shared[\/\\]/, "src/")
+        .replace(/dist[\/\\]components[\/\\]/, "src/components/")
+        .replace(/\.js$/, ".tsx")
+        .replace(/\.jsx$/, ".tsx");
+    }
+
+    // 소스 파일과 컴파일된 파일 모두 확인
+    if (hasUseClientDirective(sourcePath) || hasUseClientDirective(filePath)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**

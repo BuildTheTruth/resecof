@@ -1,8 +1,5 @@
 node_modules/
 dist/
-public/*.js
-public/*.js.map
-public/*.html
 built/
 .DS_Store
 *.log
