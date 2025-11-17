@@ -7,7 +7,7 @@
  * - /blogs/hello-world → params.id = "hello-world"
  */
 
-import { getPost } from "../../server/posts";
+import { getPost } from "../../server/posts.js";
 
 /**
  * 서버 컴포넌트: 비동기 데이터 페칭
