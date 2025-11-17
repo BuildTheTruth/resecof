@@ -2,7 +2,8 @@ import React, { Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import Counter from "./components/Counter.js";
 import { registerClientComponent } from "./utils/rsc-client.js";
-import { Root, LoadingSpinner } from "./components/ClientApp.js";
+import { Root } from "./components/Root.js";
+import { LoadingSpinner } from "./components/LoadingSpinner.js";
 
 // 클라이언트 컴포넌트 등록
 registerClientComponent("Counter", Counter);

@@ -1,93 +1,16 @@
 import React, { Suspense, useState, useTransition } from "react";
 import { getRSCPayload } from "../utils/rsc-cache.js";
-
-// 로딩 스피너 컴포넌트
-export function LoadingSpinner() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "200px",
-        color: "#666",
-        fontSize: "18px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "15px",
-        }}
-      >
-        <div
-          style={{
-            width: "40px",
-            height: "40px",
-            border: "4px solid #f3f3f3",
-            borderTop: "4px solid #6200ea",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-          }}
-        >
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
-        <div>RSC 페이로드 로딩 중...</div>
-      </div>
-    </div>
-  );
-}
+import { Content } from "./Content.js";
 
 // 현재 위치를 저장하는 전역 상태
 let currentLocation = window.location.pathname;
 
-// Content 컴포넌트: RSC 데이터를 표시
-function Content({ data }: { data: Promise<any> }) {
-  const [content, setContent] = React.useState<any>(null);
-  const [error, setError] = React.useState<Error | null>(null);
-
-  React.useEffect(() => {
-    let cancelled = false;
-
-    data
-      .then((result) => {
-        if (!cancelled) {
-          console.log("📦 Content received:", result);
-          setContent(result);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          console.error("❌ Content error:", err);
-          setError(err);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [data]);
-
-  if (error) {
-    return <div style={{ color: "red" }}>에러: {error.message}</div>;
-  }
-
-  if (!content) {
-    return <div>로딩 중...</div>;
-  }
-
-  console.log("🎨 Rendering content:", content);
-  return content;
-}
-
-// Root 컴포넌트
+/**
+ * Root 컴포넌트
+ * - 라우팅 및 네비게이션 처리
+ * - RSC 페이로드 관리
+ * - 전환 애니메이션 처리
+ */
 export function Root() {
   const [rscPayload, setRscPayload] = useState(getRSCPayload(currentLocation));
   const [isPending, startTransition] = useTransition();
