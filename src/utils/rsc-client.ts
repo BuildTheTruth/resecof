@@ -14,18 +14,6 @@ interface RSCPayload {
   error?: string;
 }
 
-// Suspense 청크를 추적하는 전역 맵
-const suspenseChunks = new Map<
-  string,
-  {
-    promise: Promise<any>;
-    resolve: (data: any) => void;
-    reject: (error: Error) => void;
-    data?: any;
-    error?: Error;
-  }
->();
-
 /**
  * Suspense 청크 타입
  */
@@ -35,7 +23,20 @@ export type SuspenseChunk = {
   reject: (error: Error) => void;
   data?: any;
   error?: Error;
+  // Promise가 resolve되었는지 추적
+  resolved: boolean;
 };
+
+// Suspense 청크를 추적하는 전역 맵
+// location별로 청크를 관리하여 location이 변경될 때 이전 청크를 정리
+const suspenseChunks = new Map<string, SuspenseChunk>();
+
+/**
+ * 특정 location의 Suspense 청크를 정리
+ */
+export function clearSuspenseChunks() {
+  suspenseChunks.clear();
+}
 
 /**
  * Suspense 청크를 가져오는 함수
@@ -58,6 +59,7 @@ export function getSuspenseChunk(chunkId: string): SuspenseChunk {
       promise,
       resolve: resolve!,
       reject: reject!,
+      resolved: false,
     };
     suspenseChunks.set(chunkId, chunk);
   }
@@ -149,7 +151,10 @@ export async function fetchRSC(location: string): Promise<any> {
           const chunk = suspenseChunks.get(payload.id);
           if (chunk) {
             console.log(`✅ Suspense 청크 도착: ${payload.id}`, revived);
+            // 데이터를 먼저 설정한 후 Promise를 resolve
+            // 이렇게 하면 SuspenseContent가 다시 렌더링될 때 데이터를 바로 사용할 수 있음
             chunk.data = revived;
+            chunk.resolved = true;
             chunk.resolve(revived);
           } else {
             console.warn(`⚠️ Suspense 청크를 찾을 수 없음: ${payload.id}`, {
@@ -157,8 +162,10 @@ export async function fetchRSC(location: string): Promise<any> {
               allChunkIds: Array.from(suspenseChunks.keys()),
             });
             // 청크가 없으면 생성하고 데이터 설정
+            // 이 경우는 reviveRSCData에서 청크를 미리 생성하지 못한 경우
             const newChunk = getSuspenseChunk(payload.id);
             newChunk.data = revived;
+            newChunk.resolved = true;
             newChunk.resolve(revived);
             console.log(`✅ 새 청크 생성 및 데이터 설정: ${payload.id}`);
           }
@@ -227,6 +234,9 @@ function reviveRSCData(data: any, clientComponents: string[]): any {
         // Suspense placeholder - 실제 React.Suspense로 변환
         const chunkId = data.props?.id;
         if (chunkId) {
+          // 청크를 미리 생성하여 청크가 도착했을 때 처리할 수 있도록 함
+          getSuspenseChunk(chunkId);
+
           // Suspense 경계 내부에 Promise를 throw하는 컴포넌트 배치
           // React Suspense는 fallback이 필수이므로 기본 fallback 제공
           // 상위 컴포넌트에서 fallback을 주입하려면 Suspense를 감싸야 함
