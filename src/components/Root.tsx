@@ -3,6 +3,7 @@
 import React, { Suspense, useState, useTransition } from "react";
 import { getRSCPayload } from "../utils/rsc-cache.js";
 import { Content } from "./Content.js";
+import { LoadingSpinner } from "./LoadingSpinner.js";
 
 // 현재 위치를 저장하는 전역 상태
 let currentLocation = window.location.pathname;
@@ -95,7 +96,7 @@ export function Root() {
         </div>
       )}
       <div style={{ opacity: isPending ? 0.6 : 1, transition: "opacity 0.2s" }}>
-        <Suspense fallback={<div>Suspense 로딩...</div>}>
+        <Suspense fallback={<LoadingSpinner />}>
           <Content data={rscPayload} />
         </Suspense>
       </div>

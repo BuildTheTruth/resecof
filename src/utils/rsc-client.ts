@@ -3,7 +3,8 @@
  * 실제 React Server Components는 더 복잡하지만, 1주차 목표를 위한 최소 구현
  */
 
-import { createElement } from "react";
+import { createElement, Suspense } from "react";
+import { SuspenseContent } from "../components/SuspenseContent.js";
 
 interface RSCPayload {
   type: string;
@@ -11,6 +12,56 @@ interface RSCPayload {
   id?: string;
   clientComponents?: string[];
   error?: string;
+}
+
+// Suspense 청크를 추적하는 전역 맵
+const suspenseChunks = new Map<
+  string,
+  {
+    promise: Promise<any>;
+    resolve: (data: any) => void;
+    reject: (error: Error) => void;
+    data?: any;
+    error?: Error;
+  }
+>();
+
+/**
+ * Suspense 청크 타입
+ */
+export type SuspenseChunk = {
+  promise: Promise<any>;
+  resolve: (data: any) => void;
+  reject: (error: Error) => void;
+  data?: any;
+  error?: Error;
+};
+
+/**
+ * Suspense 청크를 가져오는 함수
+ * 청크가 없으면 생성하고, 청크 객체를 반환
+ */
+export function getSuspenseChunk(chunkId: string): SuspenseChunk {
+  let chunk = suspenseChunks.get(chunkId);
+
+  if (!chunk) {
+    // 새로운 청크 생성
+    let resolve: (data: any) => void;
+    let reject: (error: Error) => void;
+    const promise = new Promise<any>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+
+    chunk = {
+      promise,
+      resolve: resolve!,
+      reject: reject!,
+    };
+    suspenseChunks.set(chunkId, chunk);
+  }
+
+  return chunk;
 }
 
 /**
@@ -75,14 +126,34 @@ export async function fetchRSC(location: string): Promise<any> {
         } else if (payload.type === "chunk" && payload.id) {
           // 비동기 청크 처리
           const revived = reviveRSCData(payload.data, []);
+
+          // 기존 resolver가 있으면 호출 (하위 호환성)
           const resolver = pendingChunks.get(payload.id);
           if (resolver) {
             resolver(revived);
             pendingChunks.delete(payload.id);
           }
+
+          // Suspense 청크 처리
+          const chunk = suspenseChunks.get(payload.id);
+          if (chunk) {
+            chunk.data = revived;
+            chunk.resolve(revived);
+          }
         } else if (payload.type === "error") {
           console.error("RSC Error:", payload.error);
-          throw new Error(payload.error || "Unknown RSC error");
+          const error = new Error(payload.error || "Unknown RSC error");
+
+          // Suspense 청크 에러 처리
+          if (payload.id) {
+            const chunk = suspenseChunks.get(payload.id);
+            if (chunk) {
+              chunk.error = error;
+              chunk.reject(error);
+            }
+          }
+
+          throw error;
         }
       } catch (error) {
         console.error("Failed to parse RSC payload:", error);
@@ -131,9 +202,22 @@ function reviveRSCData(data: any, clientComponents: string[]): any {
           props = reviveRSCData(otherProps, clientComponents);
         }
       } else if (data.type === "$Suspense") {
-        // Suspense placeholder - React.Suspense로 변환
-        type = "div"; // 임시로 div로 렌더링
-        props = { children: "Loading..." };
+        // Suspense placeholder - 실제 React.Suspense로 변환
+        const chunkId = data.props?.id;
+        if (chunkId) {
+          // Suspense 경계 내부에 Promise를 throw하는 컴포넌트 배치
+          // fallback은 상위 컴포넌트에서 주입받도록 함
+          type = Suspense;
+          props = {
+            children: createElement(SuspenseContent, { chunkId }),
+          };
+        } else {
+          // chunkId가 없으면 기본 처리
+          type = Suspense;
+          props = {
+            children: null,
+          };
+        }
       } else {
         // props 복원 (children 포함)
         const restoredProps = reviveRSCData(data.props, clientComponents);
