@@ -45,6 +45,7 @@ export function getSuspenseChunk(chunkId: string): SuspenseChunk {
   let chunk = suspenseChunks.get(chunkId);
 
   if (!chunk) {
+    console.log(`🆕 새 Suspense 청크 생성: ${chunkId}`);
     // 새로운 청크 생성
     let resolve: (data: any) => void;
     let reject: (error: Error) => void;
@@ -125,7 +126,17 @@ export async function fetchRSC(location: string): Promise<any> {
           console.log("✅ RSC data revived:", rootData);
         } else if (payload.type === "chunk" && payload.id) {
           // 비동기 청크 처리
-          const revived = reviveRSCData(payload.data, []);
+          console.log(`📥 청크 수신: ${payload.id}`, {
+            suspenseChunksSize: suspenseChunks.size,
+            hasChunk: suspenseChunks.has(payload.id),
+            allChunkIds: Array.from(suspenseChunks.keys()),
+          });
+
+          // root payload의 clientComponents를 사용하여 클라이언트 컴포넌트 정보 유지
+          const revived = reviveRSCData(
+            payload.data,
+            payload.clientComponents || []
+          );
 
           // 기존 resolver가 있으면 호출 (하위 호환성)
           const resolver = pendingChunks.get(payload.id);
@@ -137,8 +148,19 @@ export async function fetchRSC(location: string): Promise<any> {
           // Suspense 청크 처리
           const chunk = suspenseChunks.get(payload.id);
           if (chunk) {
+            console.log(`✅ Suspense 청크 도착: ${payload.id}`, revived);
             chunk.data = revived;
             chunk.resolve(revived);
+          } else {
+            console.warn(`⚠️ Suspense 청크를 찾을 수 없음: ${payload.id}`, {
+              suspenseChunksSize: suspenseChunks.size,
+              allChunkIds: Array.from(suspenseChunks.keys()),
+            });
+            // 청크가 없으면 생성하고 데이터 설정
+            const newChunk = getSuspenseChunk(payload.id);
+            newChunk.data = revived;
+            newChunk.resolve(revived);
+            console.log(`✅ 새 청크 생성 및 데이터 설정: ${payload.id}`);
           }
         } else if (payload.type === "error") {
           console.error("RSC Error:", payload.error);
@@ -206,15 +228,18 @@ function reviveRSCData(data: any, clientComponents: string[]): any {
         const chunkId = data.props?.id;
         if (chunkId) {
           // Suspense 경계 내부에 Promise를 throw하는 컴포넌트 배치
-          // fallback은 상위 컴포넌트에서 주입받도록 함
+          // React Suspense는 fallback이 필수이므로 기본 fallback 제공
+          // 상위 컴포넌트에서 fallback을 주입하려면 Suspense를 감싸야 함
           type = Suspense;
           props = {
+            fallback: null, // fallback이 null이어도 Suspense는 동작함
             children: createElement(SuspenseContent, { chunkId }),
           };
         } else {
           // chunkId가 없으면 기본 처리
           type = Suspense;
           props = {
+            fallback: null,
             children: null,
           };
         }
