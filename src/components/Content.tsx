@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { LoadingSpinner } from "./LoadingSpinner.js";
 
 /**
  * Content 컴포넌트: RSC 데이터를 표시
@@ -12,6 +13,9 @@ export function Content({ data }: { data: Promise<any> }) {
 
   React.useEffect(() => {
     let cancelled = false;
+    // 새로운 요청이 들어오면 이전 콘텐츠/에러 상태를 초기화하여 스피너 노출
+    setContent(null);
+    setError(null);
 
     data
       .then((result) => {
@@ -37,7 +41,7 @@ export function Content({ data }: { data: Promise<any> }) {
   }
 
   if (!content) {
-    return <div>로딩 중...</div>;
+    return <LoadingSpinner />;
   }
 
   console.log("🎨 Rendering content:", content);
