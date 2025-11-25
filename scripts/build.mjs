@@ -185,6 +185,45 @@ if (serverFilesToTranspile.length > 0) {
   );
 }
 
+// 3-2. src/actions/ 디렉토리 트랜스파일 (서버 액션)
+const actionsDir = join(rootDir, "src", "actions");
+const distActionsDir = join(distDir, "actions");
+if (existsSync(actionsDir)) {
+  console.log("📁 src/actions/ 디렉토리 트랜스파일 중...");
+
+  function findActionFiles(dir, fileList = []) {
+    if (!existsSync(dir)) return fileList;
+    const files = readdirSync(dir);
+    for (const file of files) {
+      const filePath = join(dir, file);
+      const stat = statSync(filePath);
+      if (stat.isDirectory()) {
+        findActionFiles(filePath, fileList);
+      } else if (file.endsWith(".ts") || file.endsWith(".tsx")) {
+        fileList.push(filePath);
+      }
+    }
+    return fileList;
+  }
+
+  const actionFiles = findActionFiles(actionsDir);
+
+  if (actionFiles.length > 0) {
+    await esbuild.build({
+      entryPoints: actionFiles,
+      outdir: distDir,
+      outbase: join(rootDir, "src"),
+      format: "esm",
+      platform: "node",
+      target: "node18",
+      jsx: "automatic",
+      sourcemap: true,
+      packages: "external",
+    });
+    console.log("✅ src/actions/ 디렉토리 트랜스파일 완료: dist/actions/");
+  }
+}
+
 // 4. src/pages/ 디렉토리 트랜스파일 (파일 기반 라우터)
 const pagesDir = join(rootDir, "src", "pages");
 const distPagesDir = join(distDir, "pages");
@@ -236,6 +275,10 @@ if (existsSync(pagesDir)) {
             });
             // server/ 디렉토리를 external로 처리 (별도로 트랜스파일됨)
             build.onResolve({ filter: /.*\/server\/.*\.js$/ }, (args) => {
+              return { path: args.path, external: true };
+            });
+            // actions/ 디렉토리를 external로 처리 (별도로 트랜스파일됨)
+            build.onResolve({ filter: /.*\/actions\/.*\.js$/ }, (args) => {
               return { path: args.path, external: true };
             });
           },
@@ -299,6 +342,13 @@ await esbuild.build({
             return { path: args.path, external: true };
           }
         );
+        // src/actions/ 디렉토리를 external로 처리 (별도로 트랜스파일됨)
+        build.onResolve({ filter: /^src\/actions\// }, (args) => {
+          return { path: args.path, external: true };
+        });
+        build.onResolve({ filter: /^\.\.\/actions\// }, (args) => {
+          return { path: args.path, external: true };
+        });
       },
     },
   ],

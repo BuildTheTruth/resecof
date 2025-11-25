@@ -1,12 +1,14 @@
 import React, { Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import Counter from "./components/Counter.js";
+import LikeButton from "./components/LikeButton.js";
 import { registerClientComponent } from "./utils/rsc-client.js";
 import { Root } from "./components/Root.js";
 import { LoadingSpinner } from "./components/LoadingSpinner.js";
 
 // 클라이언트 컴포넌트 등록
 registerClientComponent("Counter", Counter);
+registerClientComponent("LikeButton", LikeButton);
 
 // 앱 초기화
 function initApp() {

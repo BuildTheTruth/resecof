@@ -8,6 +8,8 @@
  */
 
 import { getPost } from "../../server/posts.js";
+import { getPostLikes } from "../../actions/like.js";
+import LikeButton from "../../components/LikeButton.js";
 
 /**
  * 서버 컴포넌트: 비동기 데이터 페칭
@@ -23,6 +25,7 @@ export default async function BlogPost({ params }: { params: { id: string } }) {
 
   // 데이터 페칭 함수 호출 (서버에서 실행되므로 HTTP 요청 없음)
   const post = await getPost(id);
+  const initialLikes = await getPostLikes(id);
 
   // 포스트가 없으면 404 처리
   if (!post) {
@@ -110,6 +113,9 @@ export default async function BlogPost({ params }: { params: { id: string } }) {
           {post.content}
         </div>
       </div>
+
+      {/* 좋아요 버튼 (서버 액션 사용) */}
+      <LikeButton postId={id} initialLikes={initialLikes} />
 
       <div
         style={{

@@ -7,6 +7,7 @@ import {
   createFakeClientComponents,
   loadClientManifest,
 } from "../utils/server-config.js";
+import { handleServerAction } from "../utils/server-actions.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,7 +15,7 @@ const __dirname = dirname(__filename);
 const PORT = 3000;
 
 const clientManifest = loadClientManifest();
-createFakeClientComponents(["Counter"]);
+createFakeClientComponents(["Counter", "LikeButton"]);
 
 const pagesDir = join(__dirname, "..", "..", "dist", "pages");
 const { staticRoutes, dynamicRoutes } = scanRoutes(pagesDir);
@@ -30,6 +31,11 @@ app.use(express.json());
 const publicDir = join(__dirname, "..", "public");
 app.use("/dist/public", express.static(publicDir));
 console.log(`📁 정적 파일 디렉토리: ${publicDir}`);
+
+// 서버 액션 엔드포인트
+app.post("/_actions", async (req, res) => {
+  await handleServerAction(req, res);
+});
 
 const handleRoute = createRouteHandler(
   staticRoutes,
