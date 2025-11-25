@@ -14,6 +14,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, "..");
 
+// 개발 모드 여부 (환경 변수 또는 명령줄 인자로 설정)
+const isDev =
+  process.env.NODE_ENV === "development" || process.argv.includes("--dev");
+const WS_PORT = process.env.WS_PORT || 3001;
+
 // 디렉토리 생성
 const distDir = join(rootDir, "dist");
 const publicDir = join(distDir, "public");
@@ -41,7 +46,9 @@ const clientBuildResult = await esbuild.build({
   sourcemap: true,
   metafile: true, // 매니페스트 생성을 위해 메타파일 활성화
   define: {
-    "process.env.NODE_ENV": '"production"',
+    "process.env.NODE_ENV": isDev ? '"development"' : '"production"',
+    __DEV__: isDev ? "true" : "false",
+    __WS_PORT__: WS_PORT.toString(),
   },
   // 클라이언트 컴포넌트만 포함
   plugins: [

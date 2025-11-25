@@ -8,11 +8,18 @@ import {
   loadClientManifest,
 } from "../utils/server-config.js";
 import { handleServerAction } from "../utils/server-actions.js";
+import {
+  startHMRServer,
+  notifyFileChange,
+  notifyReload,
+} from "../utils/hmr-server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PORT = 3000;
+const WS_PORT = parseInt(process.env.WS_PORT || "3001", 10);
+const isDev = process.env.NODE_ENV === "development";
 
 const clientManifest = loadClientManifest();
 createFakeClientComponents(["Counter", "LikeButton"]);
@@ -36,6 +43,19 @@ console.log(`📁 정적 파일 디렉토리: ${publicDir}`);
 app.post("/_actions", async (req, res) => {
   await handleServerAction(req, res);
 });
+
+// HMR 알림 엔드포인트 (개발 모드에서만)
+if (isDev) {
+  app.post("/_hmr/notify", (req, res) => {
+    const { type, file } = req.body;
+    if (type === "file-change" && file) {
+      notifyFileChange(file);
+    } else if (type === "reload") {
+      notifyReload();
+    }
+    res.json({ success: true });
+  });
+}
 
 const handleRoute = createRouteHandler(
   staticRoutes,
@@ -62,5 +82,10 @@ app.listen(PORT, () => {
         .map((r) => r.pattern.toString())
         .join(", ")}`
     );
+  }
+
+  // 개발 모드에서 HMR 서버 시작
+  if (isDev) {
+    startHMRServer(WS_PORT);
   }
 });

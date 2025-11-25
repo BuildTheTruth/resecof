@@ -18,8 +18,9 @@
     "tsx": "^4.7.1"
   },
   "scripts": {
-    "dev": "npm run build && node dist/server/index.js",
-    "build": "rm -rf dist && node scripts/build.mjs"
+    "dev": "node scripts/dev-server.mjs",
+    "build": "rm -rf dist && node scripts/build.mjs",
+    "start": "node dist/server/index.js"
   },
   "devDependencies": {
     "@babel/core": "^7.21.4",
@@ -28,8 +29,11 @@
     "@types/node": "^20.11.5",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/ws": "^8.18.1",
+    "chokidar": "^4.0.3",
     "esbuild": "^0.19.11",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "ws": "^8.18.3"
   },
   "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c"
 }

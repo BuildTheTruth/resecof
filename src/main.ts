@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Root } from "./components/Root.js";
 import { LoadingSpinner } from "./components/LoadingSpinner.js";
 import { registerComponent } from "./utils/auto-register-components.js";
+import { initHMR } from "./utils/hmr-client.js";
 
 // 클라이언트 컴포넌트 자동 등록
 // components/index.ts에서 export된 모든 컴포넌트를 import하고 등록
@@ -34,6 +35,9 @@ function initApp() {
 
   console.log("✨ React Server Components 클라이언트 초기화 완료");
   console.log("📡 RSC 스트리밍으로 컴포넌트를 받아오고 있습니다");
+
+  // HMR 초기화 (개발 모드에서만)
+  initHMR();
 }
 
 // DOM이 로드되면 앱 초기화

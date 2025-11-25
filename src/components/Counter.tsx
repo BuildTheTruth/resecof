@@ -9,13 +9,13 @@ function Counter() {
 
   const increment = () => {
     setCount((c) => c + 1);
-    setMessage("증가!");
+    setMessage("증가");
     setTimeout(() => setMessage(""), 1000);
   };
 
   const decrement = () => {
     setCount((c) => c - 1);
-    setMessage("감소!");
+    setMessage("감소");
     setTimeout(() => setMessage(""), 1000);
   };
 
@@ -85,7 +85,7 @@ function Counter() {
             fontSize: "14px",
           }}
         >
-          리셋
+          Reset
         </button>
         <button
           onClick={increment}
