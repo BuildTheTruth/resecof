@@ -47,8 +47,8 @@ const clientBuildResult = await esbuild.build({
   metafile: true, // 매니페스트 생성을 위해 메타파일 활성화
   define: {
     "process.env.NODE_ENV": isDev ? '"development"' : '"production"',
-    __DEV__: isDev ? "true" : "false",
-    __WS_PORT__: WS_PORT.toString(),
+    "__DEV__": isDev ? "true" : "false",
+    "__WS_PORT__": WS_PORT.toString(),
   },
   // 클라이언트 컴포넌트만 포함
   plugins: [

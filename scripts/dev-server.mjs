@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import chokidar from "chokidar";
 import { existsSync } from "fs";
+import http from "http";
 
 // 환경 변수 설정
 process.env.NODE_ENV = "development";
@@ -182,9 +183,10 @@ function watchFiles() {
           );
           await runBuild();
           // 잠시 대기 후 클라이언트에 HMR 알림 (WebSocket으로 전송)
-          setTimeout(() => {
-            notifyClientHMR(relativePath);
-          }, 1000);
+          // 서버가 재시작되었을 수 있으므로 충분한 대기 시간 필요
+          setTimeout(async () => {
+            await notifyClientHMR(relativePath);
+          }, 2000);
         } else if (relativePath.startsWith("src/actions/")) {
           // 서버 액션 변경 → 서버 재시작
           console.log("🔄 서버 액션 변경 감지 → 서버 재시작");
@@ -211,20 +213,39 @@ function watchFiles() {
  * 클라이언트에 HMR 알림 전송
  * 서버의 HMR 엔드포인트를 통해 WebSocket으로 전송
  */
-async function notifyClientHMR(changedFile) {
-  try {
-    const response = await fetch(`http://localhost:${DEV_PORT}/_hmr/notify`, {
+function notifyClientHMR(changedFile) {
+  return new Promise((resolve) => {
+    const postData = JSON.stringify({ type: "file-change", file: changedFile });
+
+    const options = {
+      hostname: "localhost",
+      port: DEV_PORT,
+      path: "/_hmr/notify",
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "file-change", file: changedFile }),
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(postData),
+      },
+    };
+
+    const req = http.request(options, (res) => {
+      if (res.statusCode === 200) {
+        console.log(`📤 HMR 알림 전송 완료: ${changedFile}`);
+      } else {
+        console.warn(`⚠️ HMR 알림 전송 실패: HTTP ${res.statusCode}`);
+      }
+      resolve();
     });
-    if (response.ok) {
-      console.log(`📤 HMR 알림 전송 완료: ${changedFile}`);
-    }
-  } catch (error) {
-    // 서버가 아직 시작되지 않았을 수 있음
-    console.warn(`⚠️ HMR 알림 전송 실패: ${error.message}`);
-  }
+
+    req.on("error", (error) => {
+      // 서버가 아직 시작되지 않았을 수 있음
+      console.warn(`⚠️ HMR 알림 전송 실패: ${error.message}`);
+      resolve();
+    });
+
+    req.write(postData);
+    req.end();
+  });
 }
 
 /**

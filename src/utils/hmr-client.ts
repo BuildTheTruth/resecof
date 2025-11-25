@@ -7,13 +7,19 @@
 declare const __DEV__: boolean;
 declare const __WS_PORT__: number;
 
-const WS_URL = `ws://localhost:${
-  typeof __WS_PORT__ !== "undefined" ? __WS_PORT__ : 3001
-}`;
+// 개발 모드 감지
+// 빌드 시 __DEV__가 "true" 또는 "false" 문자열로 치환됨
+// @ts-ignore
 const isDev =
   typeof __DEV__ !== "undefined"
-    ? __DEV__
+    ? String(__DEV__) === "true"
     : window.location.hostname === "localhost";
+
+// WebSocket 포트
+// 빌드 시 __WS_PORT__가 숫자 문자열로 치환됨
+// @ts-ignore
+const WS_PORT = typeof __WS_PORT__ !== "undefined" ? Number(__WS_PORT__) : 3001;
+const WS_URL = `ws://localhost:${WS_PORT}`;
 
 let ws: WebSocket | null = null;
 let reconnectTimeout: NodeJS.Timeout | null = null;
@@ -23,6 +29,7 @@ let reconnectTimeout: NodeJS.Timeout | null = null;
  */
 function connect() {
   try {
+    console.log(`🔌 HMR WebSocket 연결 시도: ${WS_URL}`);
     ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
@@ -46,8 +53,12 @@ function connect() {
       console.error("❌ HMR WebSocket 에러:", error);
     };
 
-    ws.onclose = () => {
-      console.log("🔌 HMR 연결 종료");
+    ws.onclose = (event) => {
+      console.log(
+        `🔌 HMR 연결 종료 (코드: ${event.code}, 이유: ${
+          event.reason || "없음"
+        })`
+      );
       ws = null;
 
       // 개발 모드에서만 재연결 시도
@@ -160,6 +171,7 @@ function handleReload() {
 export function initHMR() {
   // 개발 모드에서만 HMR 활성화
   if (!isDev) {
+    console.log("ℹ️ 프로덕션 모드: HMR 비활성화");
     return;
   }
 
@@ -169,7 +181,7 @@ export function initHMR() {
     return;
   }
 
-  console.log("🚀 HMR 클라이언트 초기화");
+  console.log(`🚀 HMR 클라이언트 초기화 (${WS_URL})`);
   connect();
 }
 
