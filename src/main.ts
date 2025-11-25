@@ -1,14 +1,17 @@
 import React, { Suspense } from "react";
 import { createRoot } from "react-dom/client";
-import Counter from "./components/Counter.js";
-import LikeButton from "./components/LikeButton.js";
-import { registerClientComponent } from "./utils/rsc-client.js";
 import { Root } from "./components/Root.js";
 import { LoadingSpinner } from "./components/LoadingSpinner.js";
+import { registerComponent } from "./utils/auto-register-components.js";
 
-// 클라이언트 컴포넌트 등록
-registerClientComponent("Counter", Counter);
-registerClientComponent("LikeButton", LikeButton);
+// 클라이언트 컴포넌트 자동 등록
+// components/index.ts에서 export된 모든 컴포넌트를 import하고 등록
+import * as ClientComponents from "./components/index.js";
+
+// 모든 클라이언트 컴포넌트를 자동으로 등록
+Object.entries(ClientComponents).forEach(([name, component]) => {
+  registerComponent(name, component);
+});
 
 // 앱 초기화
 function initApp() {

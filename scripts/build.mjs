@@ -5,6 +5,7 @@ import {
   writeFileSync,
   readdirSync,
   statSync,
+  readFileSync,
 } from "fs";
 import { dirname, join, relative } from "path";
 import { fileURLToPath } from "url";
@@ -120,6 +121,61 @@ const manifestPath = join(distDir, "react-client-manifest.json");
 writeFileSync(manifestPath, JSON.stringify(clientManifest, null, 2), "utf-8");
 console.log(
   "✅ 클라이언트 매니페스트 생성 완료: dist/react-client-manifest.json"
+);
+
+// 2-1. 클라이언트 컴포넌트 목록 생성 (자동 등록용)
+console.log("📋 클라이언트 컴포넌트 목록 생성 중...");
+const componentsDir = join(rootDir, "src", "components");
+const clientComponents = [];
+
+function scanClientComponents(dir, baseDir = dir) {
+  if (!existsSync(dir)) return;
+
+  const files = readdirSync(dir);
+  for (const file of files) {
+    const filePath = join(dir, file);
+    const stat = statSync(filePath);
+
+    if (stat.isDirectory()) {
+      scanClientComponents(filePath, baseDir);
+    } else if (file.endsWith(".tsx") || file.endsWith(".ts")) {
+      try {
+        const content = readFileSync(filePath, "utf-8");
+        // "use client" 지시어가 있는지 확인
+        if (
+          content.includes('"use client"') ||
+          content.includes("'use client'")
+        ) {
+          // 컴포넌트 이름 추출 (파일명에서 확장자 제거)
+          const componentName = file.replace(/\.(tsx?|jsx?)$/, "");
+          // 상대 경로 계산 (src/components/부터)
+          const relativePath = relative(baseDir, filePath)
+            .replace(/\\/g, "/")
+            .replace(/\.(tsx?|jsx?)$/, "");
+
+          clientComponents.push(componentName);
+          console.log(
+            `  ✅ 클라이언트 컴포넌트 발견: ${componentName} (${relativePath})`
+          );
+        }
+      } catch (error) {
+        console.warn(`  ⚠️ 파일 읽기 실패: ${filePath}`, error);
+      }
+    }
+  }
+}
+
+scanClientComponents(componentsDir);
+
+// 클라이언트 컴포넌트 목록 파일 저장
+const clientComponentsPath = join(distDir, "client-components.json");
+writeFileSync(
+  clientComponentsPath,
+  JSON.stringify(clientComponents, null, 2),
+  "utf-8"
+);
+console.log(
+  `✅ 클라이언트 컴포넌트 목록 생성 완료: ${clientComponents.length}개 컴포넌트`
 );
 
 // 3. src/App.tsx 트랜스파일 (서버 컴포넌트)
