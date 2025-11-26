@@ -59,8 +59,7 @@ export default function LikeButton({
             transition: "background 0.2s",
           }}
         >
-          {isPending ? "⏳" : "❤️"}
-          {isPending ? "처리 중..." : "좋아요"}
+          ❤️ 좋아요
         </button>
         <div
           style={{

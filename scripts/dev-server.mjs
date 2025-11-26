@@ -30,6 +30,19 @@ let wsServer = null;
  * 빌드 실행
  */
 async function runBuild() {
+  // 이미 빌드가 진행 중이면 대기
+  if (buildProcess) {
+    console.log("⏳ 빌드가 이미 진행 중입니다. 대기 중...");
+    return new Promise((resolve) => {
+      const checkInterval = setInterval(() => {
+        if (!buildProcess) {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 100);
+    });
+  }
+
   return new Promise((resolve, reject) => {
     console.log("🔨 빌드 시작...");
     const buildScript = join(rootDir, "scripts", "build.mjs");
@@ -150,10 +163,16 @@ function watchFiles() {
     ignored: /node_modules|dist/,
     persistent: true,
     ignoreInitial: true,
+    awaitWriteFinish: {
+      stabilityThreshold: 100,
+      pollInterval: 100,
+    },
   });
 
   watcher.on("change", async (filePath) => {
-    const relativePath = filePath.replace(rootDir + "/", "");
+    const relativePath = filePath
+      .replace(rootDir + "/", "")
+      .replace(rootDir + "\\", "");
     console.log(`📝 파일 변경 감지: ${relativePath}`);
 
     lastChangedFile = relativePath;
@@ -192,6 +211,11 @@ function watchFiles() {
           console.log("🔄 서버 액션 변경 감지 → 서버 재시작");
           await runBuild();
           await restartServer();
+        } else if (relativePath.startsWith("src/utils/")) {
+          // 유틸리티 파일 변경 → 전체 빌드 + 서버 재시작
+          console.log("🔄 유틸리티 파일 변경 감지 → 전체 빌드 + 서버 재시작");
+          await runBuild();
+          await restartServer();
         } else {
           // 기타 파일 변경 → 전체 빌드
           console.log("🔄 기타 파일 변경 감지 → 전체 빌드");
@@ -200,6 +224,7 @@ function watchFiles() {
         }
       } catch (error) {
         console.error("❌ 빌드/재시작 실패:", error);
+        console.error(error.stack);
       }
     }, 500);
   });
