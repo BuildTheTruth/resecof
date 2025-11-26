@@ -15,7 +15,8 @@
     "react-dom": "^18.2.0",
     "rollup": "^3.20.2",
     "rollup-plugin-replace": "^2.2.0",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "ws": "^8.18.3"
   },
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
@@ -32,8 +33,7 @@
     "@types/ws": "^8.18.1",
     "chokidar": "^4.0.3",
     "esbuild": "^0.19.11",
-    "typescript": "^5.3.3",
-    "ws": "^8.18.3"
+    "typescript": "^5.3.3"
   },
   "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c"
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { callServerAction } from "../utils/server-actions-client.js";
+import { likePost } from "../actions/like.client.js";
+import { useServerAction } from "../utils/use-server-action.js";
 
 /**
  * 좋아요 버튼 클라이언트 컴포넌트
- * 서버 액션을 사용하여 좋아요 기능 구현
+ * 개선된 서버 액션 API를 사용하여 좋아요 기능 구현
  */
 export default function LikeButton({
   postId,
@@ -15,26 +16,17 @@ export default function LikeButton({
   initialLikes: number;
 }) {
   const [likes, setLikes] = useState(initialLikes);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [executeLike, isPending, error] = useServerAction(likePost);
 
   const handleLike = async () => {
-    setError(null);
-    setIsPending(true);
     try {
-      const result = await callServerAction<number>(
-        "actions/like",
-        "likePost",
-        postId
-      );
-
-      if (result.type === "success") {
-        setLikes(result.data);
-      } else {
-        setError(result.error);
+      const newLikes = await executeLike(postId);
+      if (newLikes !== undefined) {
+        setLikes(newLikes);
       }
-    } finally {
-      setIsPending(false);
+    } catch (err) {
+      // 에러는 useServerAction에서 이미 처리됨
+      console.error("좋아요 실패:", err);
     }
   };
 
@@ -91,7 +83,7 @@ export default function LikeButton({
             fontSize: "14px",
           }}
         >
-          ❌ 에러: {error}
+          ❌ 에러: {error.message}
         </div>
       )}
       <p

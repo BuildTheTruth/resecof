@@ -34,13 +34,33 @@ const app = express();
 
 // JSON 파싱 미들웨어
 app.use(express.json());
+// URL 인코딩된 폼 데이터 파싱 (점진적 향상 지원)
+app.use(express.urlencoded({ extended: true }));
 
 const publicDir = join(__dirname, "..", "public");
 app.use("/dist/public", express.static(publicDir));
 console.log(`📁 정적 파일 디렉토리: ${publicDir}`);
 
-// 서버 액션 엔드포인트
+// 서버 액션 엔드포인트 (JSON 및 폼 제출 모두 지원)
 app.post("/_actions", async (req, res) => {
+  // 폼 제출인 경우 (application/x-www-form-urlencoded)
+  if (req.headers["content-type"]?.includes("application/x-www-form-urlencoded")) {
+    const formData = req.body;
+    const actionId = formData.actionId || (req.query.actionId as string);
+    const functionName = formData.functionName || (req.query.functionName as string);
+    
+    if (actionId && functionName) {
+      // FormData를 JSON 형식으로 변환
+      req.body = {
+        actionId,
+        functionName,
+        args: Object.entries(formData)
+          .filter(([key]) => key !== "actionId" && key !== "functionName")
+          .map(([, value]) => value),
+      };
+    }
+  }
+  
   await handleServerAction(req, res);
 });
 
