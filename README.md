@@ -81,7 +81,7 @@
 
 ---
 
-## 4주차 — 서버 액션, DX(HMR/오버레이), 프로덕션 빌드
+## 4주차 — 서버 액션, DX(HMR/오버레이), 프로덕션 빌드 ✅
 
 **목표**
 
@@ -89,18 +89,21 @@
 - **Dev DX**: HMR(클라), 서버 자동 재빌드, 에러 오버레이
 - 프로덕션 빌드/런북/벤치마크
 
-**할 일**
+**완료 사항**
 
-- `actions/like.ts` 등 서버 함수 → 폼 `action`으로 호출
-- dev 서버: 파일 변경 감지 → 클라 HMR, 서버 재시작(초경량)
-- 빌드 스크립트: `dev / build / start`
-- 간단한 벤치: 첫 바이트까지 시간, 전체 스트림 완료 시간 기록
+- ✅ 서버 액션 구현 (`actions/like.ts` 등 서버 함수 → 폼 `action`으로 호출)
+- ✅ 개발 서버: 파일 변경 감지 → 클라 HMR, 서버 재시작(초경량)
+- ✅ 빌드 스크립트: `dev / build / start`
+- ✅ 서버 액션 클라이언트/서버 유틸리티 구현
+- ✅ HMR WebSocket 서버/클라이언트 구현
+- ✅ LikeButton 컴포넌트를 통한 서버 액션 사용 예시
 
 **완료 기준**
 
-- 폼 전송이 전역 상태 리프레시 없이 서버에서 반영
-- `npm run build && npm start`로 프로덕션 실행 가능
-- README에 사용법/제약/버전 고정 전략 문서화
+- ✅ 폼 전송이 전역 상태 리프레시 없이 서버에서 반영
+- ✅ `npm run build && npm start`로 프로덕션 실행 가능
+- ✅ 파일 변경 시 자동 빌드 및 재시작
+- ✅ HMR을 통한 자동 리로드
 
 ---
 
@@ -111,11 +114,18 @@
 ```json
 {
   "scripts": {
-    "dev": "npm run build && node dist/server/index.js",
-    "build": "rm -rf dist && node scripts/build.mjs"
+    "dev": "node scripts/dev-server.mjs",
+    "build": "rm -rf dist && node scripts/build.mjs",
+    "start": "node dist/server/index.js"
   }
 }
 ```
+
+**스크립트 설명:**
+
+- `npm run dev`: 개발 서버 시작 (파일 변경 감지, 자동 빌드, HMR 지원)
+- `npm run build`: 프로덕션 빌드 실행
+- `npm start`: 프로덕션 서버 실행
 
 ### 빌드 프로세스
 
@@ -147,6 +157,27 @@
 
 ### 실행 방법
 
+#### 개발 모드
+
+```bash
+# 1. 의존성 설치
+npm install
+
+# 2. 개발 서버 시작 (자동 빌드 + HMR)
+npm run dev
+```
+
+개발 서버는 다음 기능을 제공합니다:
+
+- 파일 변경 자동 감지 (`chokidar`)
+- 자동 빌드 및 서버 재시작
+- HMR (Hot Module Replacement) 지원
+- WebSocket을 통한 실시간 알림
+
+서버는 `http://localhost:3000`에서 실행되고, WebSocket 서버는 `ws://localhost:3001`에서 실행됩니다.
+
+#### 프로덕션 모드
+
 ```bash
 # 1. 의존성 설치
 npm install
@@ -155,10 +186,10 @@ npm install
 npm run build
 
 # 3. 서버 실행
-npm run dev
+npm start
 ```
 
-서버는 `http://localhost:3000`에서 실행됩니다.
+프로덕션 서버는 `http://localhost:3000`에서 실행됩니다.
 
 ## 구현 세부사항
 
@@ -214,14 +245,65 @@ npm run dev
   - 엔드포인트와 비즈니스 로직 분리
   - `src/utils/`로 유틸리티 모듈 분리
 
+#### 3주차
+
+- **서버 컴포넌트에서 비동기 데이터 페칭**
+
+  - `async/await`를 사용한 자연스러운 데이터 페칭
+  - Promise를 반환하면 RSC 렌더러가 자동으로 Suspense 처리
+
+- **React Suspense 메커니즘 활용**
+
+  - Promise를 throw하여 Suspense 경계 활성화
+  - Promise가 resolve되면 자동으로 컴포넌트 재렌더링
+  - 폴링 방식 대신 React의 네이티브 메커니즘 활용
+
+- **RSC 페이로드 캐싱**
+
+  - 진행 중인 요청 캐싱으로 중복 호출 방지
+  - 완료 후 캐시 제거로 재렌더링 보장
+  - React의 변경 감지 메커니즘과 호환
+
+- **부분 스트리밍**
+
+  - 느린 섹션은 스켈레톤/placeholder 먼저 표시
+  - 데이터 준비 완료 시 본문 스트리밍
+
+#### 4주차
+
+- **서버 액션**
+
+  - 서버에서 실행되는 함수를 클라이언트에서 직접 호출
+  - React의 서버 액션 스타일 모방
+  - 폼 제출 시 페이지 새로고침 없이 상태 업데이트
+  - `POST /_actions` 엔드포인트로 서버 액션 처리
+
+- **개발 경험 개선**
+
+  - 파일 변경 자동 감지 (`chokidar`)
+  - 자동 빌드 및 재시작
+  - HMR을 통한 핫 리로드
+  - WebSocket을 통한 실시간 알림
+
+- **프로덕션 빌드**
+
+  - 개발 모드와 프로덕션 모드 분리
+  - 빌드 스크립트 최적화
+  - 서버 실행 스크립트
+
 ## 문서
+
+각 주차별 상세 구현 내용은 다음 문서를 참고하세요:
 
 - [1주차 문서](./docs/WEEK1.md) - 최소 RSC 파이프라인 구현
 - [2주차 문서](./docs/WEEK2.md) - 번들링 & 경계 & 파일 라우팅
 - [3주차 문서](./docs/WEEK3.md) - 데이터 패칭, Suspense 스트리밍, 캐시
+- [4주차 문서](./docs/WEEK4.md) - 서버 액션, DX(HMR/오버레이), 프로덕션 빌드
 
 ## 참고 자료
 
 - [React Server Components RFC](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md)
+- [React Server Actions](https://react.dev/reference/rsc/server-actions)
 - [Next.js App Router](https://nextjs.org/docs/app)
+- [Next.js Server Actions](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations)
 - [demystify-react-server-components](https://github.com/JSerZANP/demystify-react-server-components)
