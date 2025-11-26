@@ -425,7 +425,179 @@ npm start
 
 ---
 
-## 7. 파일 구조
+## 7. 서버 액션 vs 일반 API 호출
+
+### 7.1 현재 구현의 한계
+
+현재 구현은 사실상 일반 API 호출과 거의 동일합니다:
+
+```typescript
+// 현재 방식 (서버 액션이라고 하지만...)
+callServerAction("actions/like", "likePost", postId);
+
+// 일반 API 호출과 거의 동일
+fetch("/api/like", {
+  method: "POST",
+  body: JSON.stringify({ postId }),
+});
+```
+
+**현재 구현의 문제점:**
+
+1. **타입 안정성 부족**
+
+   - `actionId`, `functionName`을 문자열로 전달
+   - 컴파일 타임에 타입 체크 불가능
+   - 일반 API도 동일한 문제
+
+2. **React와의 통합 부족**
+
+   - `useTransition`, `useFormStatus` 등과 자연스럽게 통합되지 않음
+   - 수동으로 `isPending` 상태 관리 필요
+
+3. **점진적 향상 미지원**
+
+   - JavaScript 없이도 폼 제출이 가능해야 하지만 현재는 불가능
+   - 일반 API도 동일한 문제
+
+4. **서버 컴포넌트와의 통합 부족**
+   - 서버 컴포넌트에서 직접 서버 액션 함수를 호출할 수 없음
+   - 현재는 클라이언트 컴포넌트에서만 호출 가능
+
+### 7.2 서버 액션의 이론적 장점 (실제 React 서버 액션 기준)
+
+실제 React의 서버 액션은 다음과 같은 장점을 제공합니다:
+
+#### 1. 타입 안정성
+
+```typescript
+// 실제 React 서버 액션 (이상적인 형태)
+import { likePost } from "./actions/like";
+
+// 서버 함수를 직접 import하여 타입 공유
+const result = await likePost(postId); // 타입 안전!
+```
+
+**현재 구현:**
+
+- `actionId`, `functionName`을 문자열로 전달
+- 타입 안정성 없음
+
+#### 2. React와의 깊은 통합
+
+```typescript
+// 실제 React 서버 액션
+import { useTransition } from "react";
+
+const [isPending, startTransition] = useTransition();
+
+// 서버 액션은 자동으로 useTransition과 통합
+startTransition(() => {
+  likePost(postId);
+});
+```
+
+**현재 구현:**
+
+- 수동으로 `isPending` 상태 관리
+- `useTransition`과 자동 통합되지 않음
+
+#### 3. 점진적 향상
+
+```tsx
+// 실제 React 서버 액션
+<form action={likePost}>
+  <button type="submit">좋아요</button>
+</form>
+```
+
+JavaScript가 없어도 폼 제출이 가능합니다.
+
+**현재 구현:**
+
+- JavaScript 필수
+- 점진적 향상 미지원
+
+#### 4. 서버 컴포넌트와의 직접 통합
+
+```tsx
+// 실제 React 서버 액션
+// 서버 컴포넌트에서 직접 호출 가능
+export default async function PostPage() {
+  const likes = await getPostLikes(postId);
+  return <LikeButton initialLikes={likes} />;
+}
+```
+
+**현재 구현:**
+
+- 서버 컴포넌트에서 직접 호출 불가능
+- 클라이언트 컴포넌트에서만 호출 가능
+
+### 7.3 현재 구현에서 유지할 만한 점
+
+#### 1. 서버 코드가 클라이언트 번들에 포함되지 않음
+
+```typescript
+// actions/like.ts는 서버에서만 실행
+// 클라이언트 번들에 포함되지 않음
+export async function likePost(postId: string): Promise<number> {
+  // 서버에서만 실행되는 코드
+}
+```
+
+일반 API도 동일하지만, 함수 형태로 관리할 수 있어 코드 구조가 더 명확합니다.
+
+#### 2. 동적 모듈 로드
+
+```typescript
+// actionId로 동적 로드하여 확장성 제공
+const actionModule = await import(actionPath);
+const actionFunction = actionModule[functionName];
+```
+
+일반 API도 라우팅으로 가능하지만, 파일 기반 구조가 더 직관적일 수 있습니다.
+
+### 7.4 결론 및 제안
+
+**현재 구현의 정체성:**
+
+현재 구현은 학습 목적으로 기본적인 형태만 구현된 상태입니다. 실제로는 일반 REST API와 큰 차이가 없습니다.
+
+**선택지:**
+
+1. **일반 API로 변경**
+
+   - 더 단순하고 명확함
+   - RESTful API 스타일로 변경
+   - 예: `POST /api/posts/:id/like`
+
+2. **서버 액션 스타일 유지**
+   - 향후 React 서버 액션과 유사한 형태로 확장 가능
+   - 함수 기반 API로 코드 구조 명확
+   - 예: `actions/like.ts` 형태 유지
+
+**개선 방향 (향후):**
+
+실제 React 서버 액션과 유사하게 만들려면:
+
+1. **타입 안정성 개선**
+
+   - 서버 액션 함수를 직접 import 가능하도록
+   - 빌드 타임에 타입 체크
+
+2. **React 통합**
+
+   - `useTransition`, `useFormStatus` 지원
+   - 폼과의 직접 통합
+
+3. **점진적 향상**
+   - JavaScript 없이도 폼 제출 가능
+   - 서버 컴포넌트에서 직접 호출 가능
+
+---
+
+## 8. 파일 구조
 
 ```
 src/
